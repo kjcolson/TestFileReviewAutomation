@@ -1,0 +1,23 @@
+# Client data — add files locally; never commit
+input/
+
+# Generated reports — never commit
+output/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Temporary scripts
+tmp_*.py
+
+# AI tool metadata
+.claude/
+
+# VS Code workspace (machine-specific)
+*.code-workspace
+
+# Legacy planning artifact — not used by pipeline
+KnowledgeSources/Example Data Source Connections V1.xlsx
