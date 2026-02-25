@@ -107,6 +107,19 @@ Step 5/5 — Identifying test month and checking alignment...
 ============================================================
 ```
 
+When Phase 4 is automatically skipped (fewer than 2 compatible source groups submitted), you'll see this instead of the normal Phase 4 output:
+
+```
+============================================================
+  PHASE 4: Cross-Source Validation
+============================================================
+
+  SKIPPED — fewer than 2 compatible source groups present.
+  Cross-source checks (C0–C5) require pairs such as billing+GL,
+  billing+payroll, billing+scheduling, payroll+GL, or scheduling+GL.
+  Submit additional source files to enable cross-source validation.
+```
+
 If a phase fails, you'll see:
 
 ```
@@ -130,8 +143,8 @@ After a successful run, find all output in `output/{ClientName}/`:
 | `phase2_findings.json` | 2 | Machine-readable Phase 2 summary |
 | `{Client}_{Round}_Phase3_{date}.xlsx` | 3 | Data quality findings |
 | `phase3_findings.json` | 3 | Machine-readable Phase 3 summary |
-| `{Client}_{Round}_Phase4_{date}.xlsx` | 4 | Cross-source validation |
-| `phase4_findings.json` | 4 | Machine-readable Phase 4 summary |
+| `{Client}_{Round}_Phase4_{date}.xlsx` | 4 | Cross-source validation *(only created when Phase 4 runs)* |
+| `phase4_findings.json` | 4 | Machine-readable Phase 4 summary *(only created when Phase 4 runs)* |
 | `{Client}_{Round}_Phase5_{date}.xlsx` | 5 | Consolidated report (the main deliverable) |
 | `phase5_findings.json` | 5 | Machine-readable final summary |
 
@@ -156,6 +169,7 @@ You forgot `--no-prompt`. Add it to skip interactive prompts: `py run_all.py "Cl
 ## Tips
 
 - Always use `--no-prompt` for unattended runs. Without it, Phase 1 will pause for interactive file selection.
+- Phase 4 is automatically skipped when fewer than 2 compatible source groups (billing, GL, payroll, scheduling) are present. A `SKIPPED` message is shown and the pipeline continues directly to Phase 5. No Phase 4 Excel or JSON files are created.
 - Use `--date-start` and `--date-end` if you know the expected date window. Phase 3 will flag records outside this range.
 - If only one phase needs re-running (e.g., after fixing code), you can run that phase individually and then re-run Phase 5 to regenerate the consolidated report.
 - The Phase 5 Excel report (`*_Phase5_*.xlsx`) is the primary client-facing deliverable. Earlier phase reports are useful for internal debugging.

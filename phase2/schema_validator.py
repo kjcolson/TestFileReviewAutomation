@@ -61,15 +61,17 @@ def validate(
         "optional_total": 0, "optional_present": 0, "optional_missing": 0,
     }
 
-    for level in ("required", "recommended", "optional"):
+    for level in ("required", "recommended", "optional", "conditional_required"):
         fields = requirements.get(level, [])
+        # conditional_required fields count toward recommended totals in the summary
+        summary_key = "recommended" if level == "conditional_required" else level
         for field_name in fields:
-            summary[f"{level}_total"] += 1
+            summary[f"{summary_key}_total"] += 1
             finding = _check_field(field_name, level, source, covered, column_mappings)
             if finding["status"] == "PRESENT":
-                summary[f"{level}_present"] += 1
+                summary[f"{summary_key}_present"] += 1
             else:
-                summary[f"{level}_missing"] += 1
+                summary[f"{summary_key}_missing"] += 1
             findings.append(finding)
 
     # Special handling for conditional / compound fields
@@ -163,7 +165,12 @@ def _make_finding(
     matched_raw: str | None,
     confidence: str | None,
 ) -> dict[str, Any]:
-    severity_map = {"required": "CRITICAL", "recommended": "HIGH", "optional": "INFO"}
+    severity_map = {
+        "required":             "CRITICAL",
+        "recommended":          "HIGH",
+        "optional":             "INFO",
+        "conditional_required": "HIGH",   # column must exist; missing is HIGH not CRITICAL
+    }
     return {
         "template_field":    field_name,
         "staging_column":    staging_col,

@@ -22,7 +22,7 @@ def classify(
     Return a copy of column_mappings with a "RequirementLevel" key added
     to every entry.
 
-    Values: "Required" | "Recommended" | "Optional" | "Unclassified" | "UNMAPPED"
+    Values: "Required" | "Recommended" | "ConditionalRequired" | "Optional" | "Unclassified" | "UNMAPPED"
     """
     staging_to_level = _build_staging_to_level(source)
 
@@ -54,15 +54,16 @@ def _build_staging_to_level(source: str) -> dict[str, str]:
     """
     from shared.constants import FIELD_REQUIREMENTS, TEMPLATE_TO_STAGING
 
-    _PRIORITY = {"Required": 3, "Recommended": 2, "Optional": 1}
+    _PRIORITY = {"Required": 3, "Recommended": 2, "ConditionalRequired": 2, "Optional": 1}
 
     requirements = FIELD_REQUIREMENTS.get(source, {})
     staging_to_level: dict[str, str] = {}
 
     level_map = {
-        "required":    "Required",
-        "recommended": "Recommended",
-        "optional":    "Optional",
+        "required":             "Required",
+        "recommended":          "Recommended",
+        "optional":             "Optional",
+        "conditional_required": "ConditionalRequired",
     }
 
     for key_level, display_level in level_map.items():
@@ -86,7 +87,7 @@ def _resolve_level(
     staging_to_level: dict[str, str],
 ) -> str:
     """Return the highest requirement level across all staging columns."""
-    _PRIORITY = {"Required": 3, "Recommended": 2, "Optional": 1, "Unclassified": 0}
+    _PRIORITY = {"Required": 3, "Recommended": 2, "ConditionalRequired": 2, "Optional": 1, "Unclassified": 0}
     best = "Unclassified"
     for col in stg_cols:
         level = staging_to_level.get(col, "Unclassified")

@@ -146,43 +146,49 @@ def main() -> None:
                 pass
         return None
 
-    file_entries = loader.load_files(phase1_path, input_dir)
+    # Build manifest (metadata only, no DataFrames loaded yet)
+    manifest_meta = loader.get_file_manifest(phase1_path)
 
-    # Copy merged RequirementLevel back into file_entries (load_files re-reads from disk)
-    for fname in file_entries:
-        if fname in phase1_files:
-            file_entries[fname]["column_mappings"] = phase1_files[fname].get("column_mappings", [])
-
-    if not file_entries:
-        print("ERROR: No files loaded from Phase 1 metadata.")
+    if not manifest_meta:
+        print("ERROR: No files found in Phase 1 metadata.")
         sys.exit(1)
 
-    print(f"Loaded {len(file_entries)} file(s).\n")
+    print(f"Found {len(manifest_meta)} file(s).\n")
 
     # Import phase3 modules
     from phase3 import universal, billing, scheduling, payroll, gl, quality, patient_satisfaction, report
 
-    # Separate billing files for B2 cross-file check
     billing_sources = {"billing_combined", "billing_charges", "billing_transactions"}
+    billing_filenames = [fn for fn, m in manifest_meta.items() if m["source"] in billing_sources]
+
+    # Pre-load all billing files together (billing.run_checks needs them simultaneously)
     billing_dfs: dict[str, dict] = {}
+    for fn in billing_filenames:
+        fdata = loader.load_single_file(phase1_path, input_dir, fn)
+        fdata["column_mappings"] = phase1_files[fn].get("column_mappings", [])
+        billing_dfs[fn] = fdata
 
     all_file_results: dict[str, dict] = {}
     test_month = phase1_json.get("test_month", "")
 
-    # ── First pass: collect billing files ─────────────────────────────────────
-    for fname, entry in file_entries.items():
-        source = entry.get("source", "")
-        if source in billing_sources:
-            billing_dfs[fname] = entry
-
-    # ── Second pass: run checks per file ──────────────────────────────────────
+    # ── Run checks per file ────────────────────────────────────────────────────
+    # Billing files use pre-loaded billing_dfs; non-billing files are loaded lazily.
     billing_checked = False
+    billing_results: dict = {}
+    billing_prep: dict = {}
 
-    for fname, entry in file_entries.items():
+    for fname, meta in manifest_meta.items():
+        source = meta["source"]
+
+        if source in billing_sources:
+            entry = billing_dfs[fname]
+        else:
+            entry = loader.load_single_file(phase1_path, input_dir, fname)
+            entry["column_mappings"] = phase1_files[fname].get("column_mappings", [])
+
         df = entry.get("df")
-        source = entry.get("source", "unknown")
         col_maps = entry.get("column_mappings", [])
-        row_count = entry.get("row_count", 0) or (len(df) if df is not None else 0)
+        row_count = meta.get("row_count", 0) or (len(df) if df is not None else 0)
 
         print(f"  Checking: {Path(fname).name} ({source}, {row_count:,} rows)")
 
@@ -203,7 +209,6 @@ def main() -> None:
                     billing_dfs, test_month, date_range=_get_date_range("billing_combined")
                 )
                 billing_checked = True
-            # Results already computed for all billing files; retrieve for this fname
             s_findings = billing_results.get(fname, [])
             cross_source_prep = billing_prep.get(fname, {})
 
@@ -240,6 +245,9 @@ def main() -> None:
             "source_specific_findings": s_findings,
             "cross_source_prep": cross_source_prep,
         }
+
+    # Release billing DataFrames now that all checks are complete
+    del billing_dfs
 
     print()
 

@@ -111,6 +111,7 @@ def build_unified_model(phase_data: dict[str, dict]) -> dict:
         "month_aligned": p1.get("month_aligned", True),
         "billing_format": billing_format,
         "billing_notes": p1.get("billing_notes", ""),
+        "phase4_skipped": bool(p4.get("skipped", False)),
         "sources": {},
         "cross_source_issues": [],
         "phase_metadata": {
@@ -243,6 +244,7 @@ def _aggregate_phase2(p2: dict, unified: dict) -> None:
                 "message": f"Data type issue in '{raw_col}': {notes}" + (f" ({invalid_count} invalid)" if invalid_count else ""),
                 "affected_rows": str(invalid_count) if invalid_count else "N/A",
                 "requirement_level": dt.get("requirement_level"),
+                "example_values": dt.get("domain_invalid_sample", []),
                 "dedupe_key": f"{group}|datatype|{staging_col}",
             })
 
@@ -280,6 +282,7 @@ def _aggregate_phase3(p3: dict, unified: dict) -> None:
                 "message": uf.get("message", ""),
                 "affected_rows": _format_affected(uf, record_count),
                 "requirement_level": uf.get("requirement_level"),
+                "example_values": _format_sample_values(uf.get("sample_values")),
                 "sample_rows": uf.get("sample_rows", []),
                 "missing_pct": uf.get("missing_pct"),
                 "total_missing": uf.get("total_missing"),
@@ -305,6 +308,7 @@ def _aggregate_phase3(p3: dict, unified: dict) -> None:
                 "message": sf.get("message", ""),
                 "affected_rows": _format_affected(sf, record_count),
                 "requirement_level": sf.get("requirement_level"),
+                "example_values": _format_sample_values(sf.get("sample_values")),
                 "sample_rows": sf.get("sample_rows", []),
                 "dedupe_key": f"{group}|{check}|{staging_col or raw_col or check}",
             })
@@ -389,6 +393,17 @@ def _flatten_phase4_finding(finding: dict, check_id: str) -> list[dict]:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+def _format_sample_values(sample) -> list[str]:
+    """Normalize sample_values from any Phase 3 format into a flat string list."""
+    if not sample:
+        return []
+    if isinstance(sample, dict):
+        return [f"{v} ({c:,}\u00d7)" for v, c in list(sample.items())[:5]]
+    if isinstance(sample, list):
+        return [str(v) for v in sample[:5]]
+    return []
+
 
 def _count_severities(issues: list[dict]) -> dict[str, int]:
     counts = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0, "INFO": 0}

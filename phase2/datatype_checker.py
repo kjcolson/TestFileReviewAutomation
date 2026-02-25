@@ -185,7 +185,7 @@ def check(
         elif finding["notes"]:
             findings.append(finding)
 
-    return findings
+    return _consolidate_single_null_findings(findings)
 
 
 # ---------------------------------------------------------------------------
@@ -444,7 +444,7 @@ def _escalate_severity(finding: dict[str, Any], req_level: str) -> None:
     if req_level != "Required":
         return
     current = finding.get("severity")
-    escalation = {"MEDIUM": "HIGH", "HIGH": "CRITICAL"}
+    escalation = {"MEDIUM": "CRITICAL", "HIGH": "CRITICAL"}
     if current in escalation:
         finding["severity"] = escalation[current]
 
@@ -494,3 +494,64 @@ def _compile_patterns(data_format_patterns: dict) -> None:
     for key, info in data_format_patterns.items():
         if key not in _COMPILED:
             _COMPILED[key] = re.compile(info["pattern"])
+
+
+def _consolidate_single_null_findings(findings: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """
+    When multiple Required columns each have exactly 1 null and no other issues,
+    they almost certainly belong to the same bad row. Merge them into one finding
+    rather than generating N identical-looking CRITICAL rows.
+
+    Only consolidates findings where null_count == 1 AND no format/type/domain issues.
+    Findings with additional problems (bad date format, domain pattern failures, etc.)
+    are left as individual findings.
+    """
+    single_null: list[dict[str, Any]] = []
+    keep: list[dict[str, Any]] = []
+
+    for f in findings:
+        is_isolated_null = (
+            f.get("null_count") == 1
+            and f.get("severity") == "CRITICAL"
+            and f.get("requirement_level") == "Required"
+            and f.get("domain_invalid_count", 0) == 0
+            and f.get("length_exceeded_count", 0) == 0
+            and f.get("type_compatible", True) is True
+        )
+        if is_isolated_null:
+            single_null.append(f)
+        else:
+            keep.append(f)
+
+    if len(single_null) <= 1:
+        return findings  # nothing to consolidate
+
+    cols = [f["raw_column"] for f in single_null]
+    display_cols = ", ".join(cols[:10])
+    if len(cols) > 10:
+        display_cols += f" (and {len(cols) - 10} more)"
+
+    consolidated: dict[str, Any] = {
+        "raw_column":            cols[0],
+        "staging_column":        None,
+        "requirement_level":     "Required",
+        "staging_type":          None,
+        "max_length":            None,
+        "type_compatible":       True,
+        "domain_check":          None,
+        "domain_valid_pct":      None,
+        "domain_invalid_count":  0,
+        "domain_invalid_sample": [],
+        "domain_invalid_rows":   [],
+        "length_exceeded_count": 0,
+        "max_observed_length":   None,
+        "null_count":            1,
+        "null_pct":              single_null[0].get("null_pct", 0.0),
+        "severity":              "CRITICAL",
+        "notes": (
+            f"1 row has null/blank values in {len(cols)} required fields: {display_cols}"
+        ),
+        "consolidated_columns":  cols,
+    }
+
+    return keep + [consolidated]

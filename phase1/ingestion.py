@@ -15,6 +15,9 @@ from typing import Any
 import chardet
 import pandas as pd
 
+SAMPLE_ROW_LIMIT = 10_000   # max rows loaded into memory per file
+FOOTER_TAIL_ROWS = 20       # rows read from file tail for footer detection
+
 
 # ---------------------------------------------------------------------------
 # Public API
@@ -106,7 +109,7 @@ def _detect_encoding(file_path: Path) -> str:
     return enc
 
 
-def _try_parse(file_path: Path, encoding: str, delimiter: str) -> pd.DataFrame | None:
+def _try_parse(file_path: Path, encoding: str, delimiter: str, nrows: int | None = None) -> pd.DataFrame | None:
     """Try to parse with a specific delimiter; return None on failure."""
     try:
         df = pd.read_csv(
@@ -117,6 +120,7 @@ def _try_parse(file_path: Path, encoding: str, delimiter: str) -> pd.DataFrame |
             engine="c",
             on_bad_lines="warn",
             keep_default_na=False,
+            nrows=nrows,
         )
         if df.shape[1] < 2:
             return None
@@ -132,12 +136,56 @@ def _try_parse(file_path: Path, encoding: str, delimiter: str) -> pd.DataFrame |
                 engine="python",
                 on_bad_lines="warn",
                 keep_default_na=False,
+                nrows=nrows,
             )
             if df.shape[1] < 2:
                 return None
             return df
         except Exception:
             return None
+
+
+def _count_lines(file_path: Path, encoding: str) -> int:
+    """Count data rows (excluding header) using fast binary chunk reads."""
+    count = 0
+    with open(file_path, "rb") as fh:
+        for chunk in iter(lambda: fh.read(1 << 20), b""):  # 1 MB chunks
+            count += chunk.count(b"\n")
+    return max(0, count - 1)  # subtract the header newline
+
+
+def _read_tail(file_path: Path, encoding: str, delimiter: str, total_data_rows: int, n: int = FOOTER_TAIL_ROWS) -> pd.DataFrame | None:
+    """Read the last n data rows using a binary seek — no full-file scan."""
+    import io
+    CHUNK = 65_536  # 64 KB — enough for any realistic footer section
+    try:
+        file_size = file_path.stat().st_size
+        read_start = max(0, file_size - CHUNK)
+        with open(file_path, "rb") as fh:
+            if read_start > 0:
+                fh.seek(read_start)
+            tail_bytes = fh.read()
+
+        tail_text = tail_bytes.decode(encoding, errors="replace")
+        lines = [l for l in tail_text.splitlines() if l.strip()]
+
+        # Re-read only the header line (cheap: one readline)
+        with open(file_path, "r", encoding=encoding, errors="replace") as fh:
+            header_line = fh.readline().rstrip("\n")
+
+        data_lines = lines[-n:]
+        csv_text = header_line + "\n" + "\n".join(data_lines) + "\n"
+
+        return pd.read_csv(
+            io.StringIO(csv_text),
+            sep=delimiter,
+            dtype=str,
+            engine="python",
+            on_bad_lines="warn",
+            keep_default_na=False,
+        )
+    except Exception:
+        return None
 
 
 def _strip_footers(df: pd.DataFrame) -> tuple[pd.DataFrame, int]:
@@ -173,7 +221,7 @@ def _parse_file(file_path: Path) -> dict[str, Any]:
     used_delimiter: str | None = None
 
     for delimiter, label in (("|", "pipe"), (",", "comma"), ("\t", "tab")):
-        df = _try_parse(file_path, encoding, delimiter)
+        df = _try_parse(file_path, encoding, delimiter, nrows=SAMPLE_ROW_LIMIT)
         if df is not None:
             used_delimiter = delimiter
             if label != "pipe":
@@ -207,8 +255,24 @@ def _parse_file(file_path: Path) -> dict[str, Any]:
 
     raw_col_count = df.shape[1]
 
-    # Strip footers
-    df, footer_count = _strip_footers(df)
+    # Accurate row count from a fast line scan (not len(df), which is only the sample)
+    total_data_rows = _count_lines(file_path, encoding)
+    is_large_file = total_data_rows > SAMPLE_ROW_LIMIT
+
+    # Footer detection
+    if is_large_file:
+        # Read only the file tail to check for footer rows
+        tail_df = _read_tail(file_path, encoding, used_delimiter, total_data_rows)
+        if tail_df is not None:
+            tail_df.columns = [str(c).strip() for c in tail_df.columns]
+            _, footer_count = _strip_footers(tail_df)
+        else:
+            footer_count = 0
+        row_count = total_data_rows - footer_count
+    else:
+        df, footer_count = _strip_footers(df)
+        row_count = len(df)
+
     if footer_count:
         parse_issues.append(f"{footer_count} footer row(s) stripped")
 
@@ -219,11 +283,16 @@ def _parse_file(file_path: Path) -> dict[str, Any]:
     # Embedded pipe check
     parse_issues.extend(_check_embedded_pipes(df))
 
+    if is_large_file:
+        parse_issues.append(
+            f"Large file: sampled first {SAMPLE_ROW_LIMIT:,} of {row_count:,} rows for column analysis"
+        )
+
     return {
         "df": df,
         "ext": file_path.suffix.lower(),
         "raw_col_count": raw_col_count,
-        "row_count": len(df),
+        "row_count": row_count,
         "delimiter": used_delimiter,
         "encoding": encoding,
         "parse_issues": parse_issues,

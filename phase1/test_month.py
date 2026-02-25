@@ -80,7 +80,7 @@ def identify_test_month(
             per_file[filename] = _empty_result(source, "File not parsed or source unknown")
             continue
 
-        per_file[filename] = _analyse_file(df, source, mapping_results.get(filename, []))
+        per_file[filename] = _analyse_file(df, source, mapping_results.get(filename, []), meta=meta)
 
     # Determine consensus test month from core sources
     core_months = [
@@ -126,6 +126,7 @@ def _analyse_file(
     df: pd.DataFrame,
     source: str,
     mapping_records: list[dict[str, Any]],
+    meta: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Extract date range and implied month from the appropriate column."""
     filter_staging_col = SOURCE_FILTER_COL.get(source)
@@ -134,11 +135,37 @@ def _analyse_file(
     if not raw_col:
         return _empty_result(source, f"Filter date column not found (expected staging: {filter_staging_col})")
 
+    # For large files where df is a sample, re-read the full date column from disk
+    # so that min/max/mode are calculated against all rows, not just the sample.
+    if (
+        meta is not None
+        and meta.get("file_path")
+        and meta.get("delimiter")
+        and len(df) < meta.get("row_count", len(df))
+        and raw_col in df.columns
+    ):
+        try:
+            full_col_df = pd.read_csv(
+                meta["file_path"],
+                sep=meta["delimiter"],
+                dtype=str,
+                encoding=meta.get("encoding", "utf-8"),
+                usecols=[raw_col],
+                engine="c",
+                on_bad_lines="warn",
+                keep_default_na=False,
+            )
+            date_source = full_col_df[raw_col]
+        except Exception:
+            date_source = df[raw_col]
+    else:
+        date_source = df[raw_col]
+
     # Special handling for GL — YearMonth is stored as YYYYMM integer
     if source == "gl":
-        return _handle_gl_yearmonth(df, raw_col, source)
+        return _handle_gl_yearmonth(date_source, raw_col, source)
 
-    date_series = _parse_dates(df[raw_col])
+    date_series = _parse_dates(date_source)
     if date_series.isna().all():
         return _empty_result(source, f"Could not parse dates in column '{raw_col}'")
 
@@ -185,9 +212,9 @@ def _parse_dates(series: pd.Series) -> pd.Series:
     return pd.to_datetime(series, errors="coerce")
 
 
-def _handle_gl_yearmonth(df: pd.DataFrame, raw_col: str, source: str) -> dict[str, Any]:
+def _handle_gl_yearmonth(raw_col_series: pd.Series, raw_col: str, source: str) -> dict[str, Any]:
     """GL YearMonth — try YYYYMM integer first, fall back to date parsing."""
-    raw_series = df[raw_col].dropna()
+    raw_series = raw_col_series.dropna()
     if raw_series.empty:
         return _empty_result(source, f"No values in '{raw_col}'")
 

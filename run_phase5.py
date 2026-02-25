@@ -69,11 +69,19 @@ def main() -> None:
     unified = aggregator.build_unified_model(phase_data)
     print(f"  Loaded {sum(len(s.get('files', [])) for s in unified['sources'].values())} file(s) across {len(unified['sources'])} source(s)")
 
-    # Load raw DataFrames for cross-source summary sheets
+    # Load raw DataFrames only for the sources needed by cost center and provider summaries.
+    # Quality and patient_satisfaction files are excluded — they are not used by the summary builders.
     file_entries: dict = {}
     if input_dir.is_dir():
         try:
-            file_entries = loader.load_files(output_dir / "phase1_findings.json", input_dir)
+            phase1_json_path = output_dir / "phase1_findings.json"
+            manifest_meta = loader.get_file_manifest(phase1_json_path)
+            summary_sources = {
+                "billing_combined", "billing_charges", "billing_transactions",
+                "scheduling", "payroll", "gl",
+            }
+            summary_filenames = [fn for fn, m in manifest_meta.items() if m["source"] in summary_sources]
+            file_entries = loader.load_pair(phase1_json_path, input_dir / client, summary_filenames)
             print(f"  DataFrames loaded for {len(file_entries)} file(s) (Cost Center & Provider summaries)")
         except Exception as exc:
             print(f"  WARNING: Could not load DataFrames — Cost Center/Provider summaries will be empty. ({exc})")

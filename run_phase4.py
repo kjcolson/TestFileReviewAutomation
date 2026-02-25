@@ -74,24 +74,22 @@ def main() -> None:
     from shared import staging_meta
     staging_meta.load(ks_dir.parent if (ks_dir.parent / "KnowledgeSources").exists() else ks_dir)
 
-    # Load DataFrames
+    # Build manifest (metadata only, no DataFrames loaded yet)
     print("Loading data files...")
     from shared import loader
-    file_entries = loader.load_files(phase1_path, input_dir)
+    manifest_meta = loader.get_file_manifest(phase1_path)
 
-    if not file_entries:
-        print("ERROR: No files loaded from Phase 1 metadata.")
+    if not manifest_meta:
+        print("ERROR: No files found in Phase 1 metadata.")
         sys.exit(1)
 
-    print(f"Loaded {len(file_entries)} file(s).\n")
+    print(f"Found {len(manifest_meta)} file(s).\n")
 
     # Extract billing format from Phase 1 JSON
-    # billing_format is a dict: {"format": "combined"|"separate"|"none"|"unknown", ...}
     billing_format_obj = phase1_json.get("billing_format", {})
     if isinstance(billing_format_obj, dict):
         billing_format = billing_format_obj.get("format", "unknown")
     else:
-        # Fallback: older format where it was a plain string
         billing_format = str(billing_format_obj) if billing_format_obj else "unknown"
 
     print(f"  Billing format: {billing_format}")
@@ -103,47 +101,69 @@ def main() -> None:
         if prep:
             cross_source_prep_by_file[fname] = prep
 
+    # Identify file names by source for lazy pair loading
+    billing_sources = {"billing_combined", "billing_charges", "billing_transactions"}
+    billing_fns     = [fn for fn, m in manifest_meta.items() if m["source"] in billing_sources]
+    gl_fns          = [fn for fn, m in manifest_meta.items() if m["source"] == "gl"]
+    payroll_fns     = [fn for fn, m in manifest_meta.items() if m["source"] == "payroll"]
+    scheduling_fns  = [fn for fn, m in manifest_meta.items() if m["source"] == "scheduling"]
+
     # Import phase4 modules
     from phase4 import transactions_charges, billing_gl, billing_payroll, billing_scheduling, payroll_gl, scheduling_gl, report
 
     all_findings: dict[str, dict] = {}
 
+    # Load billing files once — needed for C0, C1, C2, C3
+    billing_entries = loader.load_pair(phase1_path, input_dir, billing_fns)
+
     # ── C0: Transactions <-> Charges ─────────────────────────────────────────
     print("  Running C0: Billing Transactions <-> Charges...")
     try:
-        all_findings["C0"] = transactions_charges.run_checks(file_entries, billing_format)
+        all_findings["C0"] = transactions_charges.run_checks(billing_entries, billing_format)
     except Exception as exc:
         print(f"    ERROR in C0: {exc}")
         all_findings["C0"] = {"check": "C0", "severity": "INFO", "message": f"C0 failed: {exc}", "skipped": True}
 
+    # Load GL once — needed for C1, C4, C5
+    gl_entries = loader.load_pair(phase1_path, input_dir, gl_fns)
+
     # ── C1: Billing <-> GL ────────────────────────────────────────────────────
     print("  Running C1: Billing <-> GL...")
     try:
-        all_findings["C1"] = billing_gl.run_checks(file_entries)
+        all_findings["C1"] = billing_gl.run_checks({**billing_entries, **gl_entries})
     except Exception as exc:
         print(f"    ERROR in C1: {exc}")
         all_findings["C1"] = {"check": "C1", "severity": "INFO", "message": f"C1 failed: {exc}", "skipped": True}
 
+    # Load payroll once — needed for C2, C4
+    payroll_entries = loader.load_pair(phase1_path, input_dir, payroll_fns)
+
     # ── C2: Billing <-> Payroll ───────────────────────────────────────────────
     print("  Running C2: Billing <-> Payroll...")
     try:
-        all_findings["C2"] = billing_payroll.run_checks(file_entries, cross_source_prep_by_file)
+        all_findings["C2"] = billing_payroll.run_checks({**billing_entries, **payroll_entries}, cross_source_prep_by_file)
     except Exception as exc:
         print(f"    ERROR in C2: {exc}")
         all_findings["C2"] = {"check": "C2", "severity": "INFO", "message": f"C2 failed: {exc}", "skipped": True}
 
+    # Load scheduling once — needed for C3, C5
+    scheduling_entries = loader.load_pair(phase1_path, input_dir, scheduling_fns)
+
     # ── C3: Billing <-> Scheduling ────────────────────────────────────────────
     print("  Running C3: Billing <-> Scheduling...")
     try:
-        all_findings["C3"] = billing_scheduling.run_checks(file_entries, cross_source_prep_by_file)
+        all_findings["C3"] = billing_scheduling.run_checks({**billing_entries, **scheduling_entries}, cross_source_prep_by_file)
     except Exception as exc:
         print(f"    ERROR in C3: {exc}")
         all_findings["C3"] = {"check": "C3", "severity": "INFO", "message": f"C3 failed: {exc}", "skipped": True}
 
+    # Release billing DataFrames — no longer needed after C3
+    del billing_entries
+
     # ── C4: Payroll <-> GL ────────────────────────────────────────────────────
     print("  Running C4: Payroll <-> GL...")
     try:
-        all_findings["C4"] = payroll_gl.run_checks(file_entries)
+        all_findings["C4"] = payroll_gl.run_checks({**payroll_entries, **gl_entries})
     except Exception as exc:
         print(f"    ERROR in C4: {exc}")
         all_findings["C4"] = {"check": "C4", "severity": "INFO", "message": f"C4 failed: {exc}", "skipped": True}
@@ -151,7 +171,7 @@ def main() -> None:
     # ── C5: Scheduling <-> GL ─────────────────────────────────────────────────
     print("  Running C5: Scheduling <-> GL...")
     try:
-        all_findings["C5"] = scheduling_gl.run_checks(file_entries)
+        all_findings["C5"] = scheduling_gl.run_checks({**scheduling_entries, **gl_entries})
     except Exception as exc:
         print(f"    ERROR in C5: {exc}")
         all_findings["C5"] = {"check": "C5", "severity": "INFO", "message": f"C5 failed: {exc}", "skipped": True}

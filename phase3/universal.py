@@ -152,7 +152,7 @@ def check_duplicates(
         findings.append({
             "check": "full_row_duplicates",
             "duplicate_row_count": full_dup_count,
-            "severity": "HIGH",
+            "severity": "CRITICAL",
             "message": f"{full_dup_count:,} fully identical rows found (all columns match)",
         })
     return findings

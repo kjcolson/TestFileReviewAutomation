@@ -17,7 +17,8 @@ def deduplicate(unified: dict) -> dict:
     Rules:
     1. P2 schema MISSING + P3 null_blank (>=99% missing) for same column → keep P2
     2. P2 datatype + P3 domain/format check for same column → keep P2
-    3. P4 cross-source findings are never deduplicated against P2/P3
+    3. P2 datatype + P3 null_blank for same column → keep P2
+    4. P4 cross-source findings are never deduplicated against P2/P3
     """
     for group, sdata in unified.get("sources", {}).items():
         issues = sdata["issues"]
@@ -60,6 +61,12 @@ def deduplicate(unified: dict) -> dict:
 
             # Rule 2: P2 datatype + P3 domain/format for same column
             if issue.get("check") in ("format_check", "domain_check") and col in p2_datatype_by_col:
+                issue["deduplicated"] = True
+                issue["dedupe_reason"] = f"Subsumed by Phase 2 datatype finding for {col}"
+
+            # Rule 3: P2 datatype + P3 null_blank for same column → keep P2
+            # P2's datatype finding already reports the null count in its message.
+            if issue.get("check") == "null_blank" and col in p2_datatype_by_col:
                 issue["deduplicated"] = True
                 issue["dedupe_reason"] = f"Subsumed by Phase 2 datatype finding for {col}"
 

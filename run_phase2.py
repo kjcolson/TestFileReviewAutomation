@@ -77,15 +77,15 @@ def main() -> int:
     # Load Phase 1 results and re-open source files
     # ------------------------------------------------------------------
     print("Step 1/5 — Loading Phase 1 findings and source files...")
-    from shared.loader import load_files
+    from shared.loader import get_file_manifest, load_single_file
     try:
-        file_data = load_files(phase1_json, input_dir)
+        file_manifest = get_file_manifest(phase1_json)
     except FileNotFoundError as exc:
         print(f"\nERROR: {exc}")
         return 1
 
     # ------------------------------------------------------------------
-    # Run Phase 2 checks per file
+    # Run Phase 2 checks per file (one file loaded at a time)
     # ------------------------------------------------------------------
     from phase2 import schema_validator, field_classifier, datatype_checker, unrecognized_columns
     from phase2.report import determine_compatibility
@@ -96,7 +96,8 @@ def main() -> int:
     print("Step 5/5 — Flagging unrecognized columns...")
 
     all_results: dict = {}
-    for filename, fdata in file_data.items():
+    for filename in file_manifest:
+        fdata = load_single_file(phase1_json, input_dir, filename)
         source        = fdata.get("source", "unknown")
         staging_table = fdata.get("staging_table")
         # normalise "(no staging table)" → None for downstream modules

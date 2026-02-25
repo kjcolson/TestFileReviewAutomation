@@ -130,8 +130,12 @@ FIELD_REQUIREMENTS: dict[str, dict[str, list[str]]] = {
         "required": [
             "Appt ID", "Location Name", "Appt Provider Full Name",
             "Appt Provider NPI", "Patient Identifier", "Appt Type",
-            "Created Date", "Appt Date", "Cancel Date", "Cancel Reason",
+            "Created Date", "Appt Date",
             "Appt Time", "Scheduled Length", "Appt Status",
+        ],
+        "conditional_required": [
+            "Cancel Date",    # required only when ApptStatus = Cancelled/Rescheduled
+            "Cancel Reason",  # required only when ApptStatus = Cancelled/Rescheduled
         ],
         "recommended": [
             "Practice Name", "Department Name", "Cost Center",

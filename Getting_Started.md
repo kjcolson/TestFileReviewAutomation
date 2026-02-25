@@ -10,17 +10,35 @@
 
 ## One-Time Setup
 
-1. **Clone the repo** (or download and unzip it):
-   ```
-   git clone https://github.com/your-org/TestFileReviewAutomation.git
-   cd TestFileReviewAutomation
-   ```
+### Step 1 — Get the code
 
-2. **Run setup** — double-click `setup.bat`, or from a terminal:
-   ```
-   setup.bat
-   ```
-   This installs the required Python packages and creates the `input\` and `output\` folders.
+Choose whichever method is easiest:
+
+**Option A — Download ZIP (no tools needed)**
+1. Go to the GitHub repo (link provided by your team lead)
+2. Click **Code → Download ZIP**
+3. Unzip the folder to wherever you want to work from
+
+**Option B — GitHub Desktop (recommended for most users)**
+1. Install [GitHub Desktop](https://desktop.github.com/) if you haven't already
+2. Open GitHub Desktop → **File → Clone Repository**
+3. Click the **URL** tab
+4. Paste the repo URL (provided by your team lead)
+5. Choose a local folder and click **Clone**
+
+**Option C — Command line**
+```
+git clone https://github.com/your-org/TestFileReviewAutomation.git
+cd TestFileReviewAutomation
+```
+
+### Step 2 — Run setup
+
+Double-click `setup.bat`, or from a terminal:
+```
+setup.bat
+```
+This installs the required Python packages and creates the `input\` and `output\` folders.
 
 ---
 

@@ -13,6 +13,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -46,6 +47,7 @@ def main() -> int:
         parser.error('Client name and round are required. Usage: py run_all.py "ClientName" v1')
 
     project_dir = Path(__file__).parent
+    phase1_json_path = Path(args.output) / client / "phase1_findings.json"
 
     # Build phase-specific argument lists
     phases = [
@@ -57,6 +59,23 @@ def main() -> int:
     ]
 
     for phase_num, phase_args in phases:
+        # Auto-skip Phase 4 when fewer than 2 compatible source groups are present
+        if phase_num == 4 and not _should_run_phase4(phase1_json_path):
+            _print_banner(4)
+            print("  SKIPPED — fewer than 2 compatible source groups present.")
+            print("  Cross-source checks (C0–C5) require pairs such as billing+GL,")
+            print("  billing+payroll, billing+scheduling, payroll+GL, or scheduling+GL.")
+            print("  Submit additional source files to enable cross-source validation.\n")
+            # Write a stub so Phase 5 can find phase4_findings.json
+            stub_path = Path(args.output) / client / "phase4_findings.json"
+            stub_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(stub_path, "w", encoding="utf-8") as fh:
+                json.dump(
+                    {"skipped": True, "skip_reason": "Fewer than 2 compatible source groups present", "findings": {}},
+                    fh,
+                )
+            continue
+
         script = project_dir / f"run_phase{phase_num}.py"
         if not script.exists():
             print(f"\nERROR: {script} not found.")
@@ -126,6 +145,29 @@ def _build_phase4_args(args, client: str, round_id: str) -> list[str]:
 def _build_phase5_args(args, client: str, round_id: str) -> list[str]:
     return ["--client", client, "--round", round_id,
             "--output", args.output, "--input", args.input]
+
+
+def _should_run_phase4(phase1_json_path: Path) -> bool:
+    """Return True if ≥2 compatible source groups are present for cross-source checks."""
+    _SOURCE_TO_GROUP = {
+        "billing_combined":     "billing",
+        "billing_charges":      "billing",
+        "billing_transactions": "billing",
+        "scheduling":           "scheduling",
+        "payroll":              "payroll",
+        "gl":                   "gl",
+    }
+    try:
+        with open(phase1_json_path, encoding="utf-8") as fh:
+            manifest = json.load(fh)
+        groups = {
+            _SOURCE_TO_GROUP[fdata.get("source", "")]
+            for fdata in manifest.get("files", {}).values()
+            if fdata.get("source", "") in _SOURCE_TO_GROUP
+        }
+        return len(groups) >= 2
+    except Exception:
+        return True  # Default to running Phase 4 if JSON can't be read
 
 
 if __name__ == "__main__":

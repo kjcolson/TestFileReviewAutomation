@@ -2,7 +2,7 @@
 
 ## What Does Phase 5 Do?
 
-Phase 5 is the final phase. It reads the output from Phases 1–4 and generates a single consolidated report covering every finding across all phases. No new validation checks are run — Phase 5 only aggregates and presents.
+Phase 5 reads the output from Phases 1–4 and generates a single consolidated report covering every finding. No new validation checks are run — Phase 5 only aggregates and presents.
 
 It produces:
 - An **executive summary** with readiness verdict (Ready / Conditionally Ready / Needs Revision)
@@ -13,34 +13,17 @@ It produces:
 - A **resubmission checklist** with MUST FIX and SHOULD FIX items
 - De-duplication of overlapping Phase 2 (schema) and Phase 3 (data quality) findings
 
-At the end, it produces:
-- A **console summary** you can read right in the terminal
-- An **Excel report** with 7 worksheets
-- A **JSON file** (`phase5_findings.json`)
-
 ---
 
-## Before You Start
-
-You must have already completed Phases 1–4 for this client and round. Phase 5 reads their output files.
-
-Check that these files exist in your `output/{ClientName}/` folder:
-- `phase1_findings.json`
-- `phase2_findings.json`
-- `phase3_findings.json`
-- `phase4_findings.json`
+> **Before running:** Complete Phases 1–4 first. Phase 5 reads their JSON output from `output/{ClientName}/`.
 
 ---
 
 ## Quick Start (Most Common Usage)
 
-Open a terminal in the `TestFileReviewAutomation` folder and run:
-
 ```
 py run_phase5.py "ClientName" v1
 ```
-
-Replace `ClientName` with your client's name (same spelling you used in earlier phases) and `v1` with the round number.
 
 **Examples:**
 ```
@@ -60,16 +43,12 @@ py run_phase5.py --client "ClientName" --round v1 --output ./output --input ./in
 |---|---|---|
 | `--client` | (required) | Client name — must match earlier phases |
 | `--round` | (required) | Round identifier (e.g., `v1`, `v2`) |
-| `--output` | `./output` | Folder where reports are saved (reads from and writes to `output/{client}/`) |
-| `--input` | `./input` | Base folder where client input folders live — used to load source DataFrames for the Cost Center Summary and Provider Summary sheets |
-
-Phase 5 does not need `--ref` or `--knowledge-dir`.
+| `--output` | `./output` | Folder where reports are saved |
+| `--input` | `./input` | Base folder for client input files — used to load Billing, Scheduling, Payroll, and GL source DataFrames for the Cost Center Summary and Provider Summary sheets (Quality and Patient Satisfaction files are not re-read in Phase 5) |
 
 ---
 
 ## What You'll See
-
-When the script runs, it prints progress to the terminal:
 
 ```
 Phase 5 — Results Generation & Reporting
@@ -86,7 +65,8 @@ Step 3/4 -- Determining readiness...
 Step 4/4 -- Generating report...
 ```
 
-Then it prints the full console report with executive summary, source summary, date ranges, client issue list, cross-source validation, and resubmission checklist. The Excel report is written with all 9 sheets.
+<details>
+<summary>Readiness verdicts and per-source status codes</summary>
 
 **Readiness verdicts:**
 | Verdict | What It Means |
@@ -102,18 +82,20 @@ Then it prints the full console report with executive summary, source summary, d
 | `COND` | Has HIGH findings, no CRITICAL |
 | `FAIL` | Has CRITICAL findings |
 
+</details>
+
 ---
 
 ## Output Files
-
-After running, find these files in `output/{ClientName}/`:
 
 | File | Description |
 |---|---|
 | `{Client}_{Round}_Phase5_YYYYMMDD.xlsx` | Full Excel report with 9 sheets |
 | `phase5_findings.json` | Machine-readable findings |
 
-**Excel Sheets:**
+<details>
+<summary>Excel sheet descriptions (9 sheets)</summary>
+
 1. **Executive Summary** — metadata, readiness verdict, billing format, test month, phase run dates
 2. **Source Summary** — per-source status, severity counts, date column, date range
 3. **Client Issue List** — all non-deduplicated issues formatted for client delivery
@@ -124,9 +106,11 @@ After running, find these files in `output/{ClientName}/`:
 8. **Cost Center Summary** — one row per unique cost center / department ID found across all sources (Billing, Scheduling, Payroll, GL), with aggregated wRVUs, charges, payments, appointments, payroll hours/amounts, and GL category totals per cost center
 9. **Provider Summary** — one row per unique Provider NPI found across all sources (Billing, Scheduling, Payroll, Quality), with aggregated wRVUs, charges, payments, appointments, payroll hours/amounts, and quality record counts per provider
 
+</details>
+
 ---
 
-## Common Issues and What to Do
+## Common Issues
 
 ### "phase1_findings.json not found" (or phase2/3/4)
 Run the missing phase first. All four phases must complete before Phase 5 can run.
@@ -138,15 +122,13 @@ Close the existing Phase 5 Excel report before re-running — Excel locks the fi
 Phase 5 de-duplicates across phases. If Phase 2 flagged a missing field and Phase 3 flagged the same column as 100% null, Phase 5 keeps only the Phase 2 finding. The total will be lower than the sum of individual phase findings.
 
 ### Date ranges show "NOTE: GL Report Period is not in the requested YYYYMM format"
-The GL data file uses a date format other than YYYYMM integers (e.g. `2025-06-30`). Phase 1 auto-converted to YYYYMM for analysis. The note is informational — ask the client to use YYYYMM format in future submissions.
+The GL file uses a date format other than YYYYMM integers. Phase 1 auto-converted for analysis — the note is informational. Ask the client to use YYYYMM format in future submissions.
 
 ---
 
 ## Tips
 
-- Run all five phases before reviewing findings: `py run_all.py "ClientName" v1 --no-prompt`
-- The **Client Issue List** sheet in the Excel report is designed to be shared directly with the client.
-- The **Resubmission Checklist** sheet provides a prioritized action list that can be sent alongside the issue list.
+- Run all five phases at once: `py run_all.py "ClientName" v1 --no-prompt`
+- The **Client Issue List** sheet is designed to be shared directly with the client.
+- The **Resubmission Checklist** sheet provides a prioritized action list to send alongside the issue list.
 - If the readiness verdict is "Needs Revision", the next round number is automatically calculated (v1 → v2, v2 → v3).
-- The **Cost Center Summary** and **Provider Summary** sheets require source DataFrames to be loaded. If `--input` is omitted and Phase 5 cannot locate the source files, those sheets will show zeros/blanks rather than crashing.
-- If a client's billing file uses composite cost center IDs, set up a `column_transforms.csv` in their input folder (see `1_How_To_Run_Phase1.md`, Step 5) so the cleaned values are reflected in the Cost Center Summary.

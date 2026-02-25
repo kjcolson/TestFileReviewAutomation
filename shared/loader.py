@@ -97,6 +97,107 @@ def load_manifest(phase1_json_path: str | Path) -> dict[str, Any]:
         return json.load(fh)
 
 
+def get_file_manifest(phase1_json_path: str | Path) -> dict[str, dict[str, Any]]:
+    """
+    Return file metadata from phase1_findings.json without loading any DataFrames.
+
+    Returns the same structure as load_files() but with df=None for every entry.
+    Use this to iterate over files lazily and call load_single_file() on demand
+    instead of loading all DataFrames upfront.
+    """
+    phase1_json_path = Path(phase1_json_path)
+    with open(phase1_json_path, encoding="utf-8") as fh:
+        manifest = json.load(fh)
+
+    results: dict[str, dict[str, Any]] = {}
+    for filename, fmeta in manifest.get("files", {}).items():
+        delimiter = fmeta.get("delimiter") or "|"
+        encoding  = fmeta.get("encoding")  or "utf-8"
+        results[filename] = {
+            "df":                None,
+            "source":            fmeta.get("source", "unknown"),
+            "staging_table":     fmeta.get("staging_table", "(unknown)"),
+            "column_mappings":   fmeta.get("column_mappings", []),
+            "file_path":         fmeta.get("file_path", ""),
+            "delimiter":         delimiter,
+            "encoding":          encoding,
+            "row_count":         fmeta.get("row_count", 0),
+            "col_count":         fmeta.get("col_count", 0),
+            "unmapped_raw":      fmeta.get("unmapped_raw", []),
+            "uncovered_staging": fmeta.get("uncovered_staging", {}),
+            "parse_issues":      fmeta.get("parse_issues", []),
+        }
+    return results
+
+
+def load_single_file(
+    phase1_json_path: str | Path,
+    input_base_dir: str | Path,
+    filename: str,
+) -> dict[str, Any]:
+    """
+    Load the DataFrame for a single named file from phase1_findings.json.
+
+    Returns the same fdata structure as a single entry from load_files().
+    """
+    phase1_json_path = Path(phase1_json_path)
+    with open(phase1_json_path, encoding="utf-8") as fh:
+        manifest = json.load(fh)
+
+    fmeta = manifest.get("files", {}).get(filename)
+    if fmeta is None:
+        raise KeyError(f"File '{filename}' not found in phase1_findings.json")
+
+    input_base_dir = Path(input_base_dir)
+    transforms    = manifest.get("column_transforms", [])
+    file_path_str = fmeta.get("file_path", "")
+    delimiter     = fmeta.get("delimiter") or "|"
+    encoding      = fmeta.get("encoding")  or "utf-8"
+    col_mappings  = fmeta.get("column_mappings", [])
+
+    resolved_path = _find_file(filename, file_path_str, input_base_dir)
+    df: pd.DataFrame | None = None
+    if resolved_path and resolved_path.exists():
+        df = _load_df(resolved_path, delimiter, encoding)
+        if df is not None and transforms:
+            _apply_transforms(df, col_mappings, transforms)
+    else:
+        print(f"  WARNING: Could not locate '{filename}' — datatype checks will be skipped.")
+
+    return {
+        "df":                df,
+        "source":            fmeta.get("source", "unknown"),
+        "staging_table":     fmeta.get("staging_table", "(unknown)"),
+        "column_mappings":   col_mappings,
+        "file_path":         file_path_str,
+        "delimiter":         delimiter,
+        "encoding":          encoding,
+        "row_count":         fmeta.get("row_count", 0),
+        "col_count":         fmeta.get("col_count", 0),
+        "unmapped_raw":      fmeta.get("unmapped_raw", []),
+        "uncovered_staging": fmeta.get("uncovered_staging", {}),
+        "parse_issues":      fmeta.get("parse_issues", []),
+    }
+
+
+def load_pair(
+    phase1_json_path: str | Path,
+    input_base_dir: str | Path,
+    filenames: list[str],
+) -> dict[str, dict[str, Any]]:
+    """
+    Load DataFrames for a specific subset of files from phase1_findings.json.
+
+    Returns a dict keyed by filename with the same structure as load_files()
+    but only for the requested filenames. Use for cross-source checks that
+    need exactly two (or a few) files rather than all files at once.
+    """
+    return {
+        fn: load_single_file(phase1_json_path, input_base_dir, fn)
+        for fn in filenames
+    }
+
+
 # ---------------------------------------------------------------------------
 # Column transform helpers
 # ---------------------------------------------------------------------------

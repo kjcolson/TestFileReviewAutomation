@@ -243,6 +243,7 @@ def _write_excel(
         return False
 
     wb = Workbook()
+    phase4_skipped = unified.get("phase4_skipped", False)
 
     # Sheet 1: Executive Summary
     ws1 = wb.active
@@ -253,33 +254,27 @@ def _write_excel(
     ws2 = wb.create_sheet("Source Summary")
     _write_source_summary_sheet(ws2, unified, readiness_result, missing_sources)
 
-    # Sheet 3: Client Issue List
-    ws3 = wb.create_sheet("Client Issue List")
-    _write_issue_list_sheet(ws3, client_issues)
+    # Sheet 3: Findings (combined client issue list + technical detail)
+    issue_lookup = _build_issue_lookup(unified)
+    ws3 = wb.create_sheet("Findings")
+    _write_combined_findings_sheet(ws3, client_issues, issue_lookup)
 
-    # Sheet 4: Detailed Findings
-    ws4 = wb.create_sheet("Detailed Findings")
-    _write_detailed_findings_sheet(ws4, unified)
+    # Sheet 5: Cross-Source Validation (only when Phase 4 ran)
+    if not phase4_skipped:
+        ws5 = wb.create_sheet("Cross-Source Validation")
+        _write_cross_source_sheet(ws5, unified)
 
-    # Sheet 5: Cross-Source Validation
-    ws5 = wb.create_sheet("Cross-Source Validation")
-    _write_cross_source_sheet(ws5, unified)
+    # Sheet 6: Phase Run Metadata
+    ws6 = wb.create_sheet("Phase Run Metadata")
+    _write_metadata_sheet(ws6, unified, readiness_result)
 
-    # Sheet 6: Resubmission Checklist
-    ws6 = wb.create_sheet("Resubmission Checklist")
-    _write_checklist_sheet(ws6, checklist_items)
+    # Sheet 7 & 8: Cost Center / Provider Summary (only when Phase 4 ran)
+    if not phase4_skipped:
+        ws7 = wb.create_sheet("Cost Center Summary")
+        _write_cost_center_sheet(ws7, cc_rows or [])
 
-    # Sheet 7: Phase Run Metadata
-    ws7 = wb.create_sheet("Phase Run Metadata")
-    _write_metadata_sheet(ws7, unified, readiness_result)
-
-    # Sheet 8: Cost Center Summary
-    ws8 = wb.create_sheet("Cost Center Summary")
-    _write_cost_center_sheet(ws8, cc_rows or [])
-
-    # Sheet 9: Provider Summary
-    ws9 = wb.create_sheet("Provider Summary")
-    _write_provider_summary_sheet(ws9, prov_rows or [])
+        ws8 = wb.create_sheet("Provider Summary")
+        _write_provider_summary_sheet(ws8, prov_rows or [])
 
     # Auto-width all sheets
     for ws in wb.worksheets:
@@ -370,66 +365,47 @@ def _write_source_summary_sheet(ws, unified: dict, readiness: dict, missing: lis
     ])
 
 
-def _write_issue_list_sheet(ws, client_issues: list[dict]) -> None:
-    headers = ["#", "Severity", "Source", "Phase", "Check", "Field", "Description", "Affected Rows", "Priority"]
+def _build_issue_lookup(unified: dict) -> dict[str, dict]:
+    """Build {issue_id: issue_dict} from all unified issues, annotated with file name(s)."""
+    lookup: dict[str, dict] = {}
+    for sdata in unified.get("sources", {}).values():
+        files_str = ", ".join(sdata.get("files", []))
+        for issue in sdata.get("issues", []):
+            if issue.get("id"):
+                lookup[issue["id"]] = {**issue, "_files": files_str}
+    for issue in unified.get("cross_source_issues", []):
+        if issue.get("id"):
+            lookup[issue["id"]] = {**issue, "_files": issue.get("files_compared", "")}
+    return lookup
+
+
+def _write_combined_findings_sheet(ws, client_issues: list[dict], issue_lookup: dict) -> None:
+    headers = [
+        "#", "Priority", "Severity", "Source", "Phase", "File",
+        "Check", "Field", "Raw Column", "Staging Column",
+        "Requirement Level", "Description", "Affected Rows", "Example Values",
+    ]
     ws.append(headers)
-    for i, issue in enumerate(client_issues, 1):
+    for i, ci in enumerate(client_issues, 1):
+        detail = issue_lookup.get(ci.get("id"), {})
+        example_vals = detail.get("example_values", [])
+        example_str = "; ".join(str(v) for v in example_vals[:5]) if example_vals else ""
         ws.append([
             i,
-            issue.get("severity", ""),
-            issue.get("source_display", ""),
-            f"Phase {issue.get('phase', '')}",
-            issue.get("check", ""),
-            issue.get("field", ""),
-            issue.get("description", ""),
-            issue.get("affected_rows", ""),
-            issue.get("priority", ""),
+            ci.get("priority", ""),
+            ci.get("severity", ""),
+            ci.get("source_display", ""),
+            f"Phase {ci.get('phase', '')}",
+            detail.get("_files", ""),
+            ci.get("check", ""),
+            ci.get("field", ""),
+            detail.get("raw_column", ""),
+            detail.get("staging_column", ""),
+            detail.get("requirement_level", ""),
+            ci.get("description", ""),
+            ci.get("affected_rows", ""),
+            example_str,
         ])
-
-
-def _write_detailed_findings_sheet(ws, unified: dict) -> None:
-    headers = ["#", "Phase", "Source", "File", "Check", "Raw Column", "Staging Column",
-               "Severity", "Requirement Level", "Message", "Affected Rows", "Deduplicated"]
-    ws.append(headers)
-
-    num = 1
-    # Source findings
-    for group, sdata in unified.get("sources", {}).items():
-        display = sdata.get("display_name", group.title())
-        files = ", ".join(sdata.get("files", []))
-        for issue in sdata.get("issues", []):
-            ws.append([
-                num,
-                f"Phase {issue.get('phase', '')}",
-                display,
-                files,
-                issue.get("check", ""),
-                issue.get("raw_column", ""),
-                issue.get("staging_column", ""),
-                issue.get("severity", ""),
-                issue.get("requirement_level", ""),
-                issue.get("message", ""),
-                issue.get("affected_rows", ""),
-                "Yes" if issue.get("deduplicated") else "",
-            ])
-            num += 1
-
-    # Cross-source findings
-    for issue in unified.get("cross_source_issues", []):
-        ws.append([
-            num,
-            "Phase 4",
-            " <-> ".join(issue.get("sources_involved", [])),
-            issue.get("files_compared", ""),
-            issue.get("check", ""),
-            "", "",
-            issue.get("severity", ""),
-            "",
-            issue.get("message", ""),
-            "",
-            "Yes" if issue.get("deduplicated") else "",
-        ])
-        num += 1
 
 
 def _write_cross_source_sheet(ws, unified: dict) -> None:
