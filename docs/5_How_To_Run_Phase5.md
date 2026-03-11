@@ -22,13 +22,13 @@ It produces:
 ## Quick Start (Most Common Usage)
 
 ```
-py run_phase5.py "ClientName" v1
+py scripts/run_phase5.py "ClientName" v1
 ```
 
 **Examples:**
 ```
-py run_phase5.py "Franciscan" v1
-py run_phase5.py "Memorial Health" v2
+py scripts/run_phase5.py "Franciscan" v1
+py scripts/run_phase5.py "Memorial Health" v2
 ```
 
 ---
@@ -36,7 +36,7 @@ py run_phase5.py "Memorial Health" v2
 ## Full Command with All Options
 
 ```
-py run_phase5.py --client "ClientName" --round v1 --output ./output --input ./input
+py scripts/run_phase5.py --client "ClientName" --round v1 --output ./output --input ./input
 ```
 
 | Option | Default | What It Does |

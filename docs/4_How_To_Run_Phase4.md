@@ -36,13 +36,13 @@ Check that these files exist in `output/{ClientName}/`:
 ## Quick Start (Most Common Usage)
 
 ```
-py run_phase4.py "ClientName" v1
+py scripts/run_phase4.py "ClientName" v1
 ```
 
 **Examples:**
 ```
-py run_phase4.py "Franciscan" v1
-py run_phase4.py "Memorial Health" v2
+py scripts/run_phase4.py "Franciscan" v1
+py scripts/run_phase4.py "Memorial Health" v2
 ```
 
 ---
@@ -50,7 +50,7 @@ py run_phase4.py "Memorial Health" v2
 ## Full Command with All Options
 
 ```
-py run_phase4.py --client "ClientName" --round v1 --input ./input --output ./output --knowledge-dir ./KnowledgeSources
+py scripts/run_phase4.py --client "ClientName" --round v1 --input ./input --output ./output --knowledge-dir ./KnowledgeSources
 ```
 
 | Option | Default | What It Does |
@@ -125,10 +125,10 @@ py run_phase4.py --client "ClientName" --round v1 --input ./input --output ./out
 ## Common Issues
 
 ### "phase1_findings.json not found"
-Run Phase 1 first: `py run_phase1.py "ClientName" v1 --no-prompt`
+Run Phase 1 first: `py scripts/run_phase1.py "ClientName" v1 --no-prompt`
 
 ### "phase3_findings.json not found"
-Run Phase 3 first: `py run_phase3.py "ClientName" v1`
+Run Phase 3 first: `py scripts/run_phase3.py "ClientName" v1`
 
 ### All checks show SKIPPED
 Phase 4 was auto-skipped because fewer than 2 compatible source groups are present. Submit additional source files (GL, payroll, or scheduling) alongside billing to enable cross-source validation.
@@ -150,4 +150,4 @@ Close the existing Phase 4 Excel report before re-running.
 - CRITICAL and HIGH findings from Phase 3 may explain why C2, C3, or C4 match rates are low (e.g., missing NPIs in payroll). Resolve Phase 3 issues first if cross-source match rates are unexpectedly low.
 - The **Cross-Source Summary** sheet gives a quick view of which checks passed and which need attention.
 - Fuzzy match candidates in C3a (location) and C5 (scheduling↔GL) should be reviewed manually — the tool flags likely matches but human confirmation is needed before concluding the data is compatible.
-- See `4_CrossSourceValidation.md` for the full specification and severity thresholds for each check.
+- See `reference/4_CrossSourceValidation.md` for the full specification and severity thresholds for each check.

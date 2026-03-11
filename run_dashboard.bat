@@ -22,7 +22,7 @@ if %errorlevel% equ 0 (
     set PYTHON=python
 )
 
-%PYTHON% run_dashboard.py
+%PYTHON% scripts\run_dashboard.py
 if %errorlevel% neq 0 (
     echo.
     echo Dashboard failed to start. See error above.

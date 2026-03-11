@@ -19,13 +19,12 @@ Writes:
 from __future__ import annotations
 
 import argparse
-import io
 import sys
 from pathlib import Path
 
 # Ensure box-drawing characters display correctly on Windows consoles
-if hasattr(sys.stdout, "buffer"):
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 
 def main() -> int:
@@ -44,7 +43,7 @@ def main() -> int:
     round_    = args.round_pos  or args.round
     input_dir = Path(args.input)  / client
     output_dir = Path(args.output)
-    ref_dir   = Path(__file__).parent   # project root (where .xlsx files live)
+    ref_dir   = Path(__file__).parents[1]   # project root (where .xlsx files live)
 
     phase1_json = output_dir / client / "phase1_findings.json"
 
@@ -90,13 +89,11 @@ def main() -> int:
     from phase2 import schema_validator, field_classifier, datatype_checker, unrecognized_columns
     from phase2.report import determine_compatibility
 
-    print("Step 2/5 — Running schema validation...")
-    print("Step 3/5 — Classifying fields by requirement level...")
-    print("Step 4/5 — Running data type and domain checks...")
-    print("Step 5/5 — Flagging unrecognized columns...")
+    print(f"Running compatibility checks on {len(file_manifest)} file(s)...")
 
     all_results: dict = {}
     for filename in file_manifest:
+        print(f"  Checking {filename}...")
         fdata = load_single_file(phase1_json, input_dir, filename)
         source        = fdata.get("source", "unknown")
         staging_table = fdata.get("staging_table")
@@ -138,6 +135,8 @@ def main() -> int:
             "high_count":           high,
             "medium_count":         med,
         }
+
+    print("Compatibility checks complete.")
 
     # ------------------------------------------------------------------
     # Render output

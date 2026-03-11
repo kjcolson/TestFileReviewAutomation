@@ -10,7 +10,7 @@ Phase 1: Initial Setup & Data Ingestion
 File upload and identification
 Detect data source types (Billing, Scheduling, Payroll, GL, Quality, Patient Satisfaction)
 Determine billing format (Combined vs. Separate)
-Parse files (handle pipe-delimited .txt, .csv, .xlsx formats)
+Parse files (pipe-delimited .txt and .csv formats)
 Display basic file metadata (row counts, columns, samples)
 Identify the test month across all files
 
@@ -389,11 +389,11 @@ Formatted as clear, actionable items:
 
 1. Upload all test files for the submission round.
 2. State the client name and which submission iteration this is (v1, v2, v3 — up to 3 rounds per contract).
-3. Claude will automatically:
-   - Detect file types and identify data sources
-   - Determine if billing is Combined or Separate format
-   - Run all schema, quality, and cross-source validation checks
-   - Generate the findings report with the client-ready issue list
+3. The pipeline automatically:
+   - Detects file types and identifies data sources
+   - Determines if billing is Combined or Separate format
+   - Runs all schema, quality, and cross-source validation checks
+   - Generates the findings report with the client-ready issue list
 
 ### Handling Multiple Iterations
 
@@ -417,11 +417,11 @@ Claude will incorporate it into future reviews.
 
 | Command | Description |
 |---|---|
-| `py run_phase1.py "ClientName" v1` | Phase 1 — Ingestion, source detection, column mapping, test month |
-| `py run_phase2.py "ClientName" v1` | Phase 2 — Schema validation, data type checks, compatibility |
-| `py run_phase3.py "ClientName" v1` | Phase 3 — Data quality review (universal + source-specific) |
-| `py run_phase4.py "ClientName" v1` | Phase 4 — Cross-source validation (C0–C5) |
-| `py run_phase5.py "ClientName" v1` | Phase 5 — Results generation, readiness determination |
+| `py scripts/run_phase1.py "ClientName" v1` | Phase 1 — Ingestion, source detection, column mapping, test month |
+| `py scripts/run_phase2.py "ClientName" v1` | Phase 2 — Schema validation, data type checks, compatibility |
+| `py scripts/run_phase3.py "ClientName" v1` | Phase 3 — Data quality review (universal + source-specific) |
+| `py scripts/run_phase4.py "ClientName" v1` | Phase 4 — Cross-source validation (C0–C5) |
+| `py scripts/run_phase5.py "ClientName" v1` | Phase 5 — Results generation, readiness determination |
 | `py run_all.py "ClientName" v1 --no-prompt` | Run all 5 phases sequentially |
 
 All scripts accept `--client "Name" --round v1` as an alternative to positional arguments. See the individual How-To guides for full option lists.

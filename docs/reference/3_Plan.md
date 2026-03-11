@@ -14,8 +14,8 @@ Phase 3 performs semantic, row-level data quality analysis. It consumes outputs 
 | `phase2_findings.json` | Phase 2 output | `RequirementLevel` per column (Required/Recommended/Optional) |
 | `StagingTableStructure.xlsx` | `KnowledgeSources/` | Staging column types (for numeric range checks) |
 | `TransactionTypes.xlsx` | `KnowledgeSources/` | Charge row identification (charge mask for billing_combined) |
-| `stdCmsCpt.csv` | `KnowledgeSources/` | CPT code validation (B13) |
-| `stdCmsPos.csv` | `KnowledgeSources/` | Place of Service validation (B14) |
+| `stdCmsCpt.xlsx` | `KnowledgeSources/` | CPT code validation (B13) |
+| `stdCmsPos.xlsx` | `KnowledgeSources/` | Place of Service validation (B14) |
 
 ---
 
@@ -45,13 +45,13 @@ Add to the existing `load()` function (after `TransactionTypes.xlsx` loading):
 
 ```python
 # Load CMS reference tables
-cpt_path = ks_dir / "stdCmsCpt.csv"
-pos_path = ks_dir / "stdCmsPos.csv"
+cpt_path = ks_dir / "stdCmsCpt.xlsx"
+pos_path = ks_dir / "stdCmsPos.xlsx"
 
 if cpt_path.exists():
-    _cms_cpt_df = pd.read_csv(cpt_path, dtype=str).set_index("CptCode")
+    _cms_cpt_df = pd.read_excel(cpt_path, dtype=str).set_index("CptCode")
 if pos_path.exists():
-    _cms_pos_df = pd.read_csv(pos_path, dtype=str).set_index("PosCode")
+    _cms_pos_df = pd.read_excel(pos_path, dtype=str).set_index("PosCode")
 
 def get_cms_cpt() -> pd.DataFrame | None: ...
 def get_cms_pos() -> pd.DataFrame | None: ...
@@ -204,8 +204,8 @@ After implementation, run against a Franciscan test batch and confirm:
 - [ ] `phase3_findings.json` is valid JSON with `files`, `universal_findings`, `source_specific_findings`, `cross_source_prep`
 - [ ] Excel has all 6 sheets
 - [ ] Combined billing: charge-conditional columns (`CptCode`, `Units`, `WorkRvuOriginal`, `PrimaryIcdCode`, `SecondaryIcdCodes`) only checked against charge rows
-- [ ] Missing `stdCmsCpt.csv` -> B13 skipped with warning, no crash
-- [ ] Missing `stdCmsPos.csv` -> B14 skipped with warning, no crash
+- [ ] Missing `stdCmsCpt.xlsx` -> B13 skipped with warning, no crash
+- [ ] Missing `stdCmsPos.xlsx` -> B14 skipped with warning, no crash
 - [ ] Console output is ASCII-only (no encoding errors on redirected stdout)
 - [ ] `py run_phase3.py "Franciscan" v1` (positional args) works
 - [ ] B1: Combined file with only charges -> CRITICAL

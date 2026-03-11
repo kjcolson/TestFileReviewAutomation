@@ -70,6 +70,17 @@ echo     4. Open a terminal here and run:
 echo          py run_all.py "ClientName" v1 --no-prompt
 echo.
 echo   See Getting_Started.md for a full walkthrough.
-echo   See 1_How_To_Run_Phase1.md for detailed Phase 1 options.
+echo   See docs\1_How_To_Run_Phase1.md for detailed Phase 1 options.
 echo ============================================================
+
+:: -------------------------------------------------------
+:: Hide internal folders and files from Explorer
+:: They remain fully functional -- hidden = not shown by default
+:: -------------------------------------------------------
+for %%D in (api phase1 phase2 phase3 phase4 phase5 shared scripts docs dashboard KnowledgeSources) do (
+    if exist "%%D" attrib +h "%%D"
+)
+for %%F in (.gitignore requirements.txt run_all.py create_handoff_zip.bat ReadMe.md Getting_Started.md TestFileReviewAutomation.code-workspace) do (
+    if exist "%%F" attrib +h "%%F"
+)
 pause

@@ -11,7 +11,7 @@ Phase 2 reads the results of Phase 1 and performs a database compatibility check
 Phase 2 requires the `phase1_findings.json` file that Phase 1 produces. If you haven't run Phase 1 yet, do that first:
 
 ```
-py run_phase1.py --client "AcmeMedical" --round v1
+py scripts/run_phase1.py --client "AcmeMedical" --round v1
 ```
 
 The JSON file will be at:
@@ -38,7 +38,7 @@ Navigate to the `TestFileReviewAutomation` project folder in your terminal.
 The basic command is:
 
 ```
-py run_phase2.py --client "AcmeMedical" --round v1
+py scripts/run_phase2.py --client "AcmeMedical" --round v1
 ```
 
 Replace `AcmeMedical` with your client name (must match the folder name used in Phase 1) and `v1` with the correct round number.
@@ -56,12 +56,12 @@ Replace `AcmeMedical` with your client name (must match the folder name used in 
 
 First round for a client:
 ```
-py run_phase2.py --client "AcmeMedical" --round v1
+py scripts/run_phase2.py --client "AcmeMedical" --round v1
 ```
 
 Re-run after a client submits corrected files:
 ```
-py run_phase2.py --client "AcmeMedical" --round v2
+py scripts/run_phase2.py --client "AcmeMedical" --round v2
 ```
 
 ---
@@ -141,8 +141,10 @@ TestFileReviewAutomation/
 │       ├── phase1_findings.json                  <- required by Phase 2
 │       ├── AcmeMedical_v1_Phase2_20260219.xlsx   <- created by Phase 2
 │       └── phase2_findings.json                  <- created by Phase 2
-├── run_phase1.py
-├── run_phase2.py
+├── scripts/
+│   ├── run_phase1.py
+│   ├── run_phase2.py
+│   └── ...
 └── ...
 ```
 

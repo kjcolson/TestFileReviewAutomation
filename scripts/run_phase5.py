@@ -63,7 +63,7 @@ def main() -> None:
     from shared import loader, staging_meta
 
     # Load staging metadata (needed for billing charge mask in summary modules)
-    staging_meta.load(Path(__file__).parent)
+    staging_meta.load(Path(__file__).parents[1])
 
     phase_data = aggregator.load_all_phases(output_dir)
     unified = aggregator.build_unified_model(phase_data)

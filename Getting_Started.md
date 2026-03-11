@@ -89,7 +89,7 @@ All reports are written to `output\{ClientName}\`:
 
 | Guide | What it covers |
 |---|---|
-| [1_How_To_Run_Phase1.md](1_How_To_Run_Phase1.md) | Full Phase 1 options, source subfolders, column transforms config |
-| [How_To_Run_All_Phases.md](How_To_Run_All_Phases.md) | All command-line options for the full pipeline |
-| [5_How_To_Run_Phase5.md](5_How_To_Run_Phase5.md) | Phase 5 report sheets and options |
+| [1_How_To_Run_Phase1.md](docs/1_How_To_Run_Phase1.md) | Full Phase 1 options, source subfolders, column transforms config |
+| [How_To_Run_All_Phases.md](docs/How_To_Run_All_Phases.md) | All command-line options for the full pipeline |
+| [5_How_To_Run_Phase5.md](docs/5_How_To_Run_Phase5.md) | Phase 5 report sheets and options |
 | [ReadMe.md](ReadMe.md) | Project overview and field reference |

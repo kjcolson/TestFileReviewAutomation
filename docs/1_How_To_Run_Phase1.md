@@ -2,7 +2,7 @@
 
 Phase 1 scans a client's test files, identifies each data source, maps their columns to the PIVOT staging schema, and produces an Excel report and a JSON summary in `output/`.
 
-**Quick start:** `py run_phase1.py "ClientName" v1 --no-prompt`
+**Quick start:** `py scripts/run_phase1.py "ClientName" v1 --no-prompt`
 
 ---
 
@@ -18,7 +18,7 @@ Open a terminal in the project folder and run:
 pip install -r requirements.txt
 ```
 
-You should see a success message for each package (`pandas`, `openpyxl`, `rapidfuzz`, `chardet`).
+You should see a success message for each package (`pandas`, `openpyxl`, `rapidfuzz`, `chardet`, `fastapi`, `uvicorn`). The last two are only required if you plan to use the web dashboard.
 
 ---
 
@@ -138,7 +138,7 @@ Navigate to the `TestFileReviewAutomation` project folder in your terminal.
 ### 7. Run the script
 
 ```
-py run_phase1.py "AcmeMedical" v1 --no-prompt
+py scripts/run_phase1.py "AcmeMedical" v1 --no-prompt
 ```
 
 **Full list of options:**
@@ -157,8 +157,8 @@ py run_phase1.py "AcmeMedical" v1 --no-prompt
 **Examples:**
 
 ```
-py run_phase1.py "AcmeMedical" v1 --no-prompt
-py run_phase1.py "AcmeMedical" v2 --no-prompt --date-start 2025-11-16 --date-end 2025-12-15
+py scripts/run_phase1.py "AcmeMedical" v1 --no-prompt
+py scripts/run_phase1.py "AcmeMedical" v2 --no-prompt --date-start 2025-11-16 --date-end 2025-12-15
 ```
 
 <details>

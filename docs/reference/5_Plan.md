@@ -24,13 +24,15 @@ Phase 5 does NOT add new validation checks — it only aggregates and presents e
 ```
 phase5/
     __init__.py
-    aggregator.py        # Loads all 4 phase JSONs, normalizes into source-centric model
-    deduplicator.py      # Cross-phase de-duplication (P2 schema + P3 null overlap)
-    issue_formatter.py   # Transforms findings into client-ready issue lines
-    readiness.py         # Per-source pass/fail + overall readiness determination
-    checklist.py         # Auto-generates resubmission checklist from CRITICAL/HIGH
-    missing_sources.py   # Identifies expected but absent data sources
-    report.py            # Console + Excel + JSON output
+    aggregator.py           # Loads all 4 phase JSONs, normalizes into source-centric model
+    deduplicator.py         # Cross-phase de-duplication (P2 schema + P3 null overlap)
+    issue_formatter.py      # Transforms findings into client-ready issue lines
+    readiness.py            # Per-source pass/fail + overall readiness determination
+    checklist.py            # Auto-generates resubmission checklist from CRITICAL/HIGH
+    missing_sources.py      # Identifies expected but absent data sources
+    cost_center_summary.py  # One row per cost center across Billing, Scheduling, Payroll, GL
+    provider_summary.py     # One row per provider NPI across Billing, Scheduling, Payroll, Quality
+    report.py               # Console + Excel + JSON output
 run_phase5.py
 ```
 
@@ -72,9 +74,19 @@ No changes to `shared/` were required.
 - Expected core: billing, scheduling, payroll, gl, quality
 - Patient satisfaction is optional (not flagged as missing)
 
+### `cost_center_summary.py` — Cost Center Summary Sheet
+- Re-loads Billing, Scheduling, Payroll, and GL source DataFrames (requires `--input`)
+- Produces one row per unique cost center / department ID found across all sources
+- Aggregated columns: wRVUs, charge amounts, payments, appointment counts, payroll hours/amounts, GL category totals
+
+### `provider_summary.py` — Provider Summary Sheet
+- Re-loads Billing, Scheduling, Payroll, and Quality source DataFrames (requires `--input`)
+- Produces one row per unique Provider NPI found across all sources
+- Aggregated columns: wRVUs, charge amounts, payments, appointment counts, payroll hours/amounts, quality record counts
+
 ### `report.py` — Console + Excel + JSON Output
 - Console: ASCII-only boxes matching Phase 3/4 convention
-- Excel: 7 sheets (Executive Summary, Source Summary, Client Issue List, Detailed Findings, Cross-Source Validation, Resubmission Checklist, Phase Run Metadata)
+- Excel: 9 sheets (Executive Summary, Source Summary, Client Issue List, Detailed Findings, Cross-Source Validation, Resubmission Checklist, Phase Run Metadata, Cost Center Summary, Provider Summary)
 - JSON: `phase5_findings.json` with readiness, client_issues, checklist, all findings
 - Date ranges per source displayed in console (DATE RANGES section), Excel (Date Column and Date Range columns on Source Summary sheet), and JSON (`date_range` per source in `source_summary`)
 
@@ -84,10 +96,10 @@ No changes to `shared/` were required.
 
 ```
 py run_phase5.py "ClientName" v1
-py run_phase5.py --client "ClientName" --round v1 [--output ./output]
+py run_phase5.py --client "ClientName" --round v1 [--output ./output] [--input ./input]
 ```
 
-No `--input` or `--knowledge-dir` needed (reads only JSON from output dir).
+`--input` is used to re-load source DataFrames for the Cost Center Summary and Provider Summary sheets. `--knowledge-dir` is not needed.
 
 ---
 
@@ -98,7 +110,7 @@ No `--input` or `--knowledge-dir` needed (reads only JSON from output dir).
 | `{client}_{round}_Phase5_{YYYYMMDD}.xlsx` | `output/{client}/` |
 | `phase5_findings.json` | `output/{client}/` |
 
-### Excel Sheets
+### Excel Sheets (9 total)
 - `Executive Summary` — metadata, readiness verdict, phase run dates
 - `Source Summary` — per-source status with severity counts, date column, and date range
 - `Client Issue List` — actionable issues sorted by severity
@@ -106,6 +118,8 @@ No `--input` or `--knowledge-dir` needed (reads only JSON from output dir).
 - `Cross-Source Validation` — C0–C5 check summary
 - `Resubmission Checklist` — prioritized action items
 - `Phase Run Metadata` — phase dates and key results
+- `Cost Center Summary` — one row per cost center with aggregated wRVUs, charges, payments, appointments, payroll, and GL totals
+- `Provider Summary` — one row per Provider NPI with aggregated wRVUs, charges, payments, appointments, payroll hours, and quality record counts
 
 ---
 
@@ -169,8 +183,8 @@ Stops on first failure with an error message. Prints banners between phases.
 - Readiness = "NEEDS REVISION (Round v2)" (has CRITICAL issues)
 - Client issue list sorted CRITICAL first, then HIGH, then MEDIUM
 - Resubmission checklist has MUST FIX for every CRITICAL finding
-- De-duplication: P2 schema MISSING + P3 100% null → single issue (206 issues after dedup from ~155 pre-dedup)
-- Excel has 7 sheets with correct names
+- De-duplication: P2 schema MISSING + P3 100% null for same column → kept as single issue (total count is lower after dedup than the raw sum across phases)
+- Excel has 9 sheets with correct names (including Cost Center Summary and Provider Summary)
 - `phase5_findings.json` is valid JSON with readiness, client_issues, checklist
 - Date ranges displayed in console, Excel Source Summary, and JSON
 - GL date format mismatch noted with "NOTE:" line in console date ranges

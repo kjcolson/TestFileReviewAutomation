@@ -37,15 +37,15 @@ Check that these files exist in your `output/{ClientName}/` folder:
 Open a terminal in the `TestFileReviewAutomation` folder and run:
 
 ```
-py run_phase3.py "ClientName" v1
+py scripts/run_phase3.py "ClientName" v1
 ```
 
 Replace `ClientName` with your client's name (same spelling you used in Phase 1 and 2) and `v1` with the round number.
 
 **Examples:**
 ```
-py run_phase3.py "Franciscan" v1
-py run_phase3.py "Memorial Health" v2
+py scripts/run_phase3.py "Franciscan" v1
+py scripts/run_phase3.py "Memorial Health" v2
 ```
 
 ---
@@ -55,7 +55,7 @@ py run_phase3.py "Memorial Health" v2
 If your files are in non-default locations, use the full form:
 
 ```
-py run_phase3.py --client "ClientName" --round v1 --input ./input --output ./output --knowledge-dir ./KnowledgeSources
+py scripts/run_phase3.py --client "ClientName" --round v1 --input ./input --output ./output --knowledge-dir ./KnowledgeSources
 ```
 
 | Option | Default | What It Does |
@@ -128,15 +128,15 @@ After running, find these files in `output/{ClientName}/`:
 ## Common Issues and What to Do
 
 ### "phase1_findings.json not found"
-Run Phase 1 first: `py run_phase1.py "ClientName" v1`
+Run Phase 1 first: `py scripts/run_phase1.py "ClientName" v1`
 
 ### "phase2_findings.json not found"
-Run Phase 2 first: `py run_phase2.py "ClientName" v1`
+Run Phase 2 first: `py scripts/run_phase2.py "ClientName" v1`
 
-### "WARNING: stdCmsCpt.csv not found"
+### "WARNING: stdCmsCpt.xlsx not found"
 The CMS CPT reference file is missing from `KnowledgeSources/`. CPT code validation (check B13) will be skipped. Add the file to re-enable that check.
 
-### "WARNING: stdCmsPos.csv not found"
+### "WARNING: stdCmsPos.xlsx not found"
 The CMS Place of Service reference file is missing. POS validation (check B14) will be skipped.
 
 ### CRITICAL: Combined billing file contains only charge rows

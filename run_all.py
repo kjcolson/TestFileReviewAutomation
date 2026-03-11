@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -76,14 +77,18 @@ def main() -> int:
                 )
             continue
 
-        script = project_dir / f"run_phase{phase_num}.py"
+        script = project_dir / "scripts" / f"run_phase{phase_num}.py"
         if not script.exists():
             print(f"\nERROR: {script} not found.")
             return 1
 
         _print_banner(phase_num)
-        cmd = [sys.executable, str(script)] + phase_args
-        result = subprocess.run(cmd, cwd=str(project_dir))
+        cmd = [sys.executable, "-u", str(script)] + phase_args
+        child_env = {**os.environ}
+        existing_pp = child_env.get("PYTHONPATH", "")
+        child_env["PYTHONPATH"] = str(project_dir) + (os.pathsep + existing_pp if existing_pp else "")
+        flags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
+        result = subprocess.run(cmd, cwd=str(project_dir), env=child_env, creationflags=flags)
 
         if result.returncode != 0:
             print(f"\n{'=' * 60}")

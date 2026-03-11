@@ -65,6 +65,7 @@ def ingest_directory(input_dir: str | Path) -> dict[str, dict[str, Any]]:
             continue
         if file_path.suffix.lower() not in (".txt", ".csv"):
             continue
+        print(f"  Parsing {file_path.name} ({file_path.stat().st_size / 1e6:.1f} MB)...")
         meta = _parse_file(file_path)
         meta["source_folder"] = None
         meta["file_path"] = str(file_path.resolve())
@@ -79,6 +80,7 @@ def ingest_directory(input_dir: str | Path) -> dict[str, dict[str, Any]]:
                 continue
             if file_path.suffix.lower() not in (".txt", ".csv"):
                 continue
+            print(f"  Parsing {file_path.name} ({file_path.stat().st_size / 1e6:.1f} MB)...")
             meta = _parse_file(file_path)
             meta["source_folder"] = subdir.name
             meta["file_path"] = str(file_path.resolve())
@@ -100,7 +102,7 @@ _FOOTER_PAT = re.compile(
 def _detect_encoding(file_path: Path) -> str:
     """Return chardet-detected encoding; fall back to utf-8."""
     with open(file_path, "rb") as fh:
-        raw = fh.read(min(1_000_000, file_path.stat().st_size))
+        raw = fh.read(min(32_768, file_path.stat().st_size))
     result = chardet.detect(raw)
     enc = result.get("encoding") or "utf-8"
     # chardet sometimes returns 'ascii' for valid utf-8 supersets
