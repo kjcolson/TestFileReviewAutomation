@@ -23,14 +23,23 @@ Choose whichever method is easiest:
 1. Install [GitHub Desktop](https://desktop.github.com/) if you haven't already
 2. Open GitHub Desktop → **File → Clone Repository**
 3. Click the **URL** tab
-4. Paste the repo URL (provided by your team lead)
-5. Choose a local folder and click **Clone**
+4. Paste the repo URL: `https://github.com/kjcolson/TestFileReviewAutomation.git`
+5. For **Local Path**, choose a plain folder like `Documents` — **not** a folder already named `TestFileReviewAutomation` (GitHub Desktop creates the subfolder automatically)
+6. Click **Clone**
 
 **Option C — Command line**
 ```
-git clone https://github.com/your-org/TestFileReviewAutomation.git
+git clone https://github.com/kjcolson/TestFileReviewAutomation.git
 cd TestFileReviewAutomation
 ```
+
+### Keeping up to date
+
+If you already have the repo and get unexpected errors, pull the latest changes first:
+- **GitHub Desktop**: Click **Fetch origin**, then **Pull**
+- **Command line**: `git pull`
+
+---
 
 ### Step 2 — Run setup
 

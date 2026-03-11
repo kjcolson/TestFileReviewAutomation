@@ -33,6 +33,16 @@ def main():
         print("=" * 60)
         sys.exit(1)
 
+    try:
+        import uvicorn  # noqa: F401
+        import fastapi  # noqa: F401
+    except ImportError as exc:
+        print("=" * 60)
+        print(f"  ERROR: Missing dependency — {exc}")
+        print("  Run setup.bat to install required packages.")
+        print("=" * 60)
+        sys.exit(1)
+
     url = f"http://localhost:{args.port}"
     print("=" * 60)
     print("  PIVOT Test File Review Dashboard")
@@ -51,15 +61,22 @@ def main():
     )
 
     if not args.no_browser:
-        time.sleep(1.5)
+        time.sleep(2.0)
+        if proc.poll() is not None:
+            print("=" * 60)
+            print(f"  ERROR: Server exited immediately (code {proc.returncode}).")
+            print("  Check the error above, then run setup.bat if packages are missing.")
+            print("=" * 60)
+            sys.exit(1)
         webbrowser.open(url)
 
     try:
-        proc.wait()
+        exit_code = proc.wait()
     except KeyboardInterrupt:
         print("\nShutting down…")
         proc.terminate()
-        proc.wait()
+        exit_code = proc.wait()
+    sys.exit(exit_code)
 
 
 if __name__ == "__main__":
