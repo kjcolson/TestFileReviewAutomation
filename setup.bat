@@ -32,6 +32,22 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
+echo.
+echo Checking for Node.js (needed to build the dashboard)...
+node --version >nul 2>&1
+if %errorlevel% equ 0 (
+    echo Node.js found. Building dashboard...
+    cd dashboard
+    call npm install
+    call npm run build
+    cd ..
+    echo Dashboard built successfully.
+) else (
+    echo NOTE: Node.js not found -- skipping dashboard build.
+    echo       Install Node.js from https://nodejs.org/ then run:
+    echo         cd dashboard ^&^& npm install ^&^& npm run build
+)
+
 :: Create working directories if absent
 if not exist "input"  mkdir input
 if not exist "output" mkdir output
@@ -40,7 +56,12 @@ echo.
 echo ============================================================
 echo   Setup complete!
 echo.
-echo   Quick start:
+echo   Quick start (Dashboard):
+echo     1. Double-click run_dashboard.bat
+echo     2. The browser will open at http://localhost:8000
+echo     3. Click "Run New Validation" to kick off the pipeline
+echo.
+echo   Quick start (Command Line):
 echo     1. Create a folder:  input\{ClientName}\
 echo     2. Add source subfolders inside it:
 echo          billing_combined\  gl\  payroll\  scheduling\
