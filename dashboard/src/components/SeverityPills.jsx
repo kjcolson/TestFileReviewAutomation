@@ -1,9 +1,9 @@
 const COLORS = {
-  CRITICAL: 'bg-red-100 text-red-800',
-  HIGH:     'bg-orange-100 text-orange-800',
-  MEDIUM:   'bg-yellow-100 text-yellow-800',
-  LOW:      'bg-blue-100 text-blue-800',
-  INFO:     'bg-gray-100 text-gray-600',
+  CRITICAL: 'bg-red-800/60 text-red-200',
+  HIGH:     'bg-orange-800/60 text-orange-200',
+  MEDIUM:   'bg-yellow-800/60 text-yellow-200',
+  LOW:      'bg-blue-800/60 text-blue-200',
+  INFO:     'bg-slate-700 text-slate-300',
 }
 
 export default function SeverityPills({ counts = {}, hideZero = true }) {

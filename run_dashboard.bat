@@ -22,6 +22,17 @@ if %errorlevel% equ 0 (
     set PYTHON=python
 )
 
+:: Check required packages are installed
+%PYTHON% -c "import uvicorn, fastapi" >nul 2>&1
+if %errorlevel% neq 0 (
+    echo.
+    echo ERROR: Required packages are not installed.
+    echo Please run setup.bat first, then try again.
+    echo.
+    pause
+    exit /b 1
+)
+
 %PYTHON% scripts\run_dashboard.py
 if %errorlevel% neq 0 (
     echo.

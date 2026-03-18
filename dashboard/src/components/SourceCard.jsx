@@ -1,14 +1,14 @@
 import SeverityPills from './SeverityPills.jsx'
 
 const STATUS_STYLE = {
-  PASS:        'bg-green-50 border-green-300',
-  CONDITIONAL: 'bg-yellow-50 border-yellow-300',
-  FAIL:        'bg-red-50 border-red-300',
+  PASS:        'bg-green-900/20 border-green-700',
+  CONDITIONAL: 'bg-yellow-900/20 border-yellow-700',
+  FAIL:        'bg-red-900/20 border-red-700',
 }
 const STATUS_BADGE = {
-  PASS:        'bg-green-100 text-green-800',
-  CONDITIONAL: 'bg-yellow-100 text-yellow-800',
-  FAIL:        'bg-red-100 text-red-800',
+  PASS:        'bg-green-800/50 text-green-300',
+  CONDITIONAL: 'bg-yellow-800/50 text-yellow-300',
+  FAIL:        'bg-red-800/50 text-red-300',
 }
 
 function fmt(n) {
@@ -18,8 +18,8 @@ function fmt(n) {
 
 export default function SourceCard({ name, data }) {
   const status = data?.status || 'UNKNOWN'
-  const cardStyle = STATUS_STYLE[status] || 'bg-gray-50 border-gray-200'
-  const badgeStyle = STATUS_BADGE[status] || 'bg-gray-100 text-gray-700'
+  const cardStyle = STATUS_STYLE[status] || 'bg-pivot-surface border-pivot-border'
+  const badgeStyle = STATUS_BADGE[status] || 'bg-slate-700 text-slate-300'
 
   const dateRange = data?.date_range
   const dateStr = dateRange
@@ -29,12 +29,12 @@ export default function SourceCard({ name, data }) {
   return (
     <div className={`rounded-lg border-2 p-4 ${cardStyle}`}>
       <div className="flex items-center justify-between mb-2">
-        <span className="font-semibold text-sm text-gray-800">{data?.display_name || name}</span>
+        <span className="font-semibold text-sm text-pivot-textPrimary">{data?.display_name || name}</span>
         <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${badgeStyle}`}>
           {status}
         </span>
       </div>
-      <div className="text-xs text-gray-500 mb-2">
+      <div className="text-xs text-pivot-textMuted mb-2">
         {data?.row_count != null && (
           <span>{fmt(data.row_count)} rows</span>
         )}

@@ -1,14 +1,14 @@
 export default function ReadinessBadge({ verdict, size = 'md' }) {
   const v = (verdict || '').toLowerCase()
-  let color = 'bg-gray-100 text-gray-700'
+  let color = 'bg-slate-700 text-slate-300'
   let label = verdict || 'Unknown'
 
   if (v.includes('ready for') || v === 'ready') {
-    color = 'bg-green-100 text-green-800 border border-green-300'
+    color = 'bg-green-800/50 text-green-300 border border-green-600'
   } else if (v.includes('conditionally')) {
-    color = 'bg-yellow-100 text-yellow-800 border border-yellow-300'
+    color = 'bg-yellow-800/50 text-yellow-300 border border-yellow-600'
   } else if (v.includes('needs revision') || v.includes('revision')) {
-    color = 'bg-red-100 text-red-800 border border-red-300'
+    color = 'bg-red-800/50 text-red-300 border border-red-600'
   }
 
   const sizeClass = size === 'lg'

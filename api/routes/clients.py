@@ -31,6 +31,13 @@ def list_clients():
             continue
         readiness = findings.get("readiness", {})
         total = readiness.get("total_counts", {})
+        # Extract source type display names for the card
+        source_summary = findings.get("source_summary", {})
+        sources = [
+            source_summary[k].get("display_name", k)
+            for k in source_summary
+            if k != "cross_source" and isinstance(source_summary[k], dict)
+        ]
         results.append({
             "client": client_dir.name,
             "round": findings.get("round", ""),
@@ -41,6 +48,7 @@ def list_clients():
             "high": total.get("HIGH", 0),
             "medium": total.get("MEDIUM", 0),
             "low": total.get("LOW", 0),
+            "sources": sources,
         })
     return results
 

@@ -1,14 +1,14 @@
 const STATUS_STYLE = {
-  PASS:        'bg-green-100 text-green-800',
-  CONDITIONAL: 'bg-yellow-100 text-yellow-800',
-  FAIL:        'bg-red-100 text-red-800',
+  PASS:        'bg-green-800/50 text-green-300',
+  CONDITIONAL: 'bg-yellow-800/50 text-yellow-300',
+  FAIL:        'bg-red-800/50 text-red-300',
 }
 const SEV_STYLE = {
-  CRITICAL: 'text-red-700 font-semibold',
-  HIGH:     'text-orange-600 font-semibold',
-  MEDIUM:   'text-yellow-600',
-  LOW:      'text-blue-600',
-  INFO:     'text-gray-500',
+  CRITICAL: 'text-red-400 font-semibold',
+  HIGH:     'text-orange-400 font-semibold',
+  MEDIUM:   'text-yellow-400',
+  LOW:      'text-blue-400',
+  INFO:     'text-slate-400',
 }
 
 const CHECK_LABELS = {
@@ -27,7 +27,7 @@ const CHECK_LABELS = {
 
 export default function CrossSourceMatrix({ summary }) {
   if (!summary || Object.keys(summary).length === 0) {
-    return <p className="text-sm text-gray-400 italic">No cross-source checks were run.</p>
+    return <p className="text-sm text-pivot-textMuted italic">No cross-source checks were run.</p>
   }
 
   const rows = Object.entries(summary)
@@ -36,20 +36,20 @@ export default function CrossSourceMatrix({ summary }) {
     <div className="overflow-x-auto">
       <table className="w-full text-sm border-collapse">
         <thead>
-          <tr className="bg-gray-100 text-left">
-            <th className="px-3 py-2 font-semibold text-gray-700 w-48">Check</th>
-            <th className="px-3 py-2 font-semibold text-gray-700 w-28">Status</th>
-            <th className="px-3 py-2 font-semibold text-gray-700 w-24">Severity</th>
-            <th className="px-3 py-2 font-semibold text-gray-700">Message</th>
+          <tr className="bg-slate-700 text-left">
+            <th className="px-3 py-2 font-semibold text-slate-200 w-48">Check</th>
+            <th className="px-3 py-2 font-semibold text-slate-200 w-28">Status</th>
+            <th className="px-3 py-2 font-semibold text-slate-200 w-24">Severity</th>
+            <th className="px-3 py-2 font-semibold text-slate-200">Message</th>
           </tr>
         </thead>
         <tbody>
           {rows.map(([key, check]) => {
-            const statusStyle = STATUS_STYLE[check?.status] || 'bg-gray-100 text-gray-700'
-            const sevStyle = SEV_STYLE[check?.severity] || 'text-gray-600'
+            const statusStyle = STATUS_STYLE[check?.status] || 'bg-slate-700 text-slate-300'
+            const sevStyle = SEV_STYLE[check?.severity] || 'text-slate-400'
             return (
-              <tr key={key} className="border-t border-gray-200 hover:bg-gray-50">
-                <td className="px-3 py-2 font-medium text-gray-700">
+              <tr key={key} className="border-t border-slate-700 hover:bg-slate-700/50">
+                <td className="px-3 py-2 font-medium text-pivot-textPrimary">
                   {CHECK_LABELS[key] || key}
                 </td>
                 <td className="px-3 py-2">
@@ -60,7 +60,7 @@ export default function CrossSourceMatrix({ summary }) {
                 <td className={`px-3 py-2 text-xs ${sevStyle}`}>
                   {check?.severity || '—'}
                 </td>
-                <td className="px-3 py-2 text-gray-600 text-xs leading-relaxed">
+                <td className="px-3 py-2 text-pivot-textSecondary text-xs leading-relaxed">
                   {check?.message || '—'}
                 </td>
               </tr>

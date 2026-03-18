@@ -71,13 +71,13 @@ export default function PhaseProgressLog({ jobId, onComplete }) {
               key={label}
               className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-full border ${
                 completed
-                  ? 'bg-green-50 border-green-300 text-green-800'
+                  ? 'bg-green-900/30 border-green-700 text-green-300'
                   : isNext && !done
-                  ? 'bg-blue-50 border-blue-300 text-blue-700 animate-pulse'
-                  : 'bg-gray-50 border-gray-200 text-gray-400'
+                  ? 'bg-blue-900/30 border-blue-700 text-blue-300 animate-pulse'
+                  : 'bg-slate-800 border-slate-700 text-pivot-textMuted'
               }`}
             >
-              {completed ? '✓' : isNext && !done ? '⋯' : '○'}
+              {completed ? '\u2713' : isNext && !done ? '\u22EF' : '\u25CB'}
               <span>{label}</span>
             </div>
           )
@@ -85,9 +85,9 @@ export default function PhaseProgressLog({ jobId, onComplete }) {
       </div>
 
       {/* Log output */}
-      <div className="bg-gray-900 text-green-400 rounded-lg p-4 h-80 overflow-y-auto font-mono text-xs leading-relaxed">
+      <div className="bg-gray-950 text-green-400 rounded-lg p-4 h-80 overflow-y-auto font-mono text-xs leading-relaxed">
         {lines.length === 0 && !done && (
-          <span className="text-gray-500 italic">Starting pipeline…</span>
+          <span className="text-slate-500 italic">Starting pipeline…</span>
         )}
         {lines.map((line, i) => (
           <div key={i} className="whitespace-pre-wrap break-all">{line}</div>
@@ -95,8 +95,8 @@ export default function PhaseProgressLog({ jobId, onComplete }) {
         {done && (
           <div className={`mt-2 font-bold ${exitCode === 0 ? 'text-green-300' : 'text-red-400'}`}>
             {exitCode === 0
-              ? '✓ Pipeline completed successfully.'
-              : `✗ Pipeline exited with code ${exitCode}.`}
+              ? '\u2713 Pipeline completed successfully.'
+              : `\u2717 Pipeline exited with code ${exitCode}.`}
           </div>
         )}
         <div ref={bottomRef} />

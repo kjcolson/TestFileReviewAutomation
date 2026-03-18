@@ -173,3 +173,35 @@ You forgot `--no-prompt`. Add it to skip interactive prompts: `py run_all.py "Cl
 - Use `--date-start` and `--date-end` if you know the expected date window. Phase 3 will flag records outside this range.
 - If only one phase needs re-running (e.g., after fixing code), you can run that phase individually and then re-run Phase 5 to regenerate the consolidated report.
 - The Phase 5 Excel report (`*_Phase5_*.xlsx`) is the primary client-facing deliverable. Earlier phase reports are useful for internal debugging.
+
+---
+
+## After Phase 5: Generate SQL
+
+Once the pipeline completes, use the **Generate SQL** feature in the dashboard to automatically produce the three SQL artifacts needed to onboard the client into the Inflow platform.
+
+### What Gets Generated
+
+| File | Where It Goes | Purpose |
+|------|--------------|---------|
+| `{ClientName}_config.sql` | Run in client SQL Server DB | Populates `ds.DataSource`, `ds.DataSourceFile`, `dl.RawColumn`, `dl.ColumnMapping` |
+| `cst.dl{NN}_{Entity}.sql` | Add to `inflow-db-cst` | Client-specific transformation stored procedure(s) |
+| `{ClientName}_liquibase.xml` | Append to `inflow-db-cst/changelog/release_scripts/` | Liquibase changeset entries |
+
+All output files are written to `output/{ClientName}/sqlgen/`.
+
+### How to Run
+
+1. Open the dashboard and navigate to the client
+2. Click **Generate SQL**
+3. Review the auto-filled parameters (Client ID, Raw DB name, data source numbers, SFTP paths)
+4. Toggle off any source files you don't need right now
+5. Click **Generate SQL** — output appears in the preview tabs and is saved to disk
+
+### After Generation
+
+1. Copy the `cst.dl{NN}_{Entity}.sql` file(s) into `inflow-db-cst/changelog/database_objects/{ClientId}_{ClientName}/Stored Procedures/`
+2. Append the XML snippet from `{ClientName}_liquibase.xml` to `inflow-db-cst/changelog/release_scripts/{ClientId}_{ClientName}.xml`
+3. Open `{ClientName}_config.sql` in SSMS connected to the client database, review each section, and commit transaction by transaction
+
+See `sqlgen/README.md` for full details on the generated SQL structure and guardrails.

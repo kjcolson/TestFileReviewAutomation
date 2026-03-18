@@ -9,18 +9,18 @@ import {
 } from '@tanstack/react-table'
 
 const SEV_STYLE = {
-  CRITICAL: 'bg-red-50',
-  HIGH:     'bg-orange-50',
-  MEDIUM:   'bg-yellow-50',
-  LOW:      'bg-blue-50',
-  INFO:     'bg-gray-50',
+  CRITICAL: 'bg-red-900/20',
+  HIGH:     'bg-orange-900/20',
+  MEDIUM:   'bg-yellow-900/20',
+  LOW:      'bg-blue-900/20',
+  INFO:     'bg-slate-800',
 }
 const SEV_BADGE = {
-  CRITICAL: 'bg-red-100 text-red-800',
-  HIGH:     'bg-orange-100 text-orange-800',
-  MEDIUM:   'bg-yellow-100 text-yellow-800',
-  LOW:      'bg-blue-100 text-blue-800',
-  INFO:     'bg-gray-100 text-gray-600',
+  CRITICAL: 'bg-red-800/60 text-red-200',
+  HIGH:     'bg-orange-800/60 text-orange-200',
+  MEDIUM:   'bg-yellow-800/60 text-yellow-200',
+  LOW:      'bg-blue-800/60 text-blue-200',
+  INFO:     'bg-slate-700 text-slate-300',
 }
 
 const col = createColumnHelper()
@@ -29,7 +29,7 @@ const COLUMNS = [
   col.accessor('id', {
     header: 'ID',
     size: 80,
-    cell: (i) => <span className="font-mono text-xs text-gray-500">{i.getValue()}</span>,
+    cell: (i) => <span className="font-mono text-xs text-pivot-textMuted">{i.getValue()}</span>,
   }),
   col.accessor('severity', {
     header: 'Severity',
@@ -37,16 +37,20 @@ const COLUMNS = [
     cell: (i) => {
       const v = i.getValue()
       return (
-        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${SEV_BADGE[v] || 'bg-gray-100 text-gray-700'}`}>
+        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${SEV_BADGE[v] || 'bg-slate-700 text-slate-300'}`}>
           {v}
         </span>
       )
     },
   }),
-  col.accessor('source_display', { header: 'Source', size: 120 }),
+  col.accessor('source_display', {
+    header: 'Source',
+    size: 120,
+    cell: (i) => <span className="text-pivot-textSecondary">{i.getValue()}</span>,
+  }),
   col.accessor('description', {
     header: 'Description',
-    cell: (i) => <span className="text-sm">{i.getValue()}</span>,
+    cell: (i) => <span className="text-sm text-pivot-textPrimary">{i.getValue()}</span>,
   }),
   col.accessor('priority', {
     header: 'Priority',
@@ -54,10 +58,10 @@ const COLUMNS = [
     cell: (i) => {
       const v = i.getValue()
       const style = v === 'MUST FIX'
-        ? 'text-red-700 font-semibold'
+        ? 'text-red-400 font-semibold'
         : v === 'SHOULD FIX'
-        ? 'text-orange-600 font-medium'
-        : 'text-gray-500'
+        ? 'text-orange-400 font-medium'
+        : 'text-pivot-textMuted'
       return <span className={`text-xs ${style}`}>{v}</span>
     },
   }),
@@ -89,7 +93,6 @@ export default function IssuesTable({ issues = [] }) {
           r.source_display?.toLowerCase().includes(q)
       )
     }
-    // Sort by severity order
     return [...rows].sort((a, b) => {
       const ai = SEV_ORDER.indexOf(a.severity)
       const bi = SEV_ORDER.indexOf(b.severity)
@@ -114,7 +117,7 @@ export default function IssuesTable({ issues = [] }) {
         <select
           value={sevFilter}
           onChange={(e) => setSevFilter(e.target.value)}
-          className="text-sm border border-gray-300 rounded px-2 py-1"
+          className="text-sm border border-slate-600 bg-slate-800 text-slate-200 rounded px-2 py-1"
         >
           <option value="">All Severities</option>
           {SEV_ORDER.map((s) => (
@@ -124,7 +127,7 @@ export default function IssuesTable({ issues = [] }) {
         <select
           value={srcFilter}
           onChange={(e) => setSrcFilter(e.target.value)}
-          className="text-sm border border-gray-300 rounded px-2 py-1"
+          className="text-sm border border-slate-600 bg-slate-800 text-slate-200 rounded px-2 py-1"
         >
           <option value="">All Sources</option>
           {sources.map((s) => (
@@ -136,23 +139,23 @@ export default function IssuesTable({ issues = [] }) {
           placeholder="Search descriptions…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="text-sm border border-gray-300 rounded px-3 py-1 flex-1 min-w-48"
+          className="text-sm border border-slate-600 bg-slate-800 text-slate-200 rounded px-3 py-1 flex-1 min-w-48 placeholder:text-slate-500"
         />
-        <span className="text-xs text-gray-500 self-center">
+        <span className="text-xs text-pivot-textMuted self-center">
           {filtered.length} of {issues.length} issues
         </span>
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded border border-gray-200">
+      <div className="overflow-x-auto rounded border border-slate-700">
         <table className="w-full text-sm border-collapse">
           <thead>
             {table.getHeaderGroups().map((hg) => (
-              <tr key={hg.id} className="bg-gray-100">
+              <tr key={hg.id} className="bg-slate-700">
                 {hg.headers.map((h) => (
                   <th
                     key={h.id}
-                    className="px-3 py-2 text-left font-semibold text-gray-700 cursor-pointer select-none"
+                    className="px-3 py-2 text-left font-semibold text-slate-200 cursor-pointer select-none"
                     style={{ width: h.column.columnDef.size }}
                     onClick={h.column.getToggleSortingHandler()}
                   >
@@ -166,7 +169,7 @@ export default function IssuesTable({ issues = [] }) {
           <tbody>
             {table.getRowModel().rows.length === 0 && (
               <tr>
-                <td colSpan={COLUMNS.length} className="px-3 py-6 text-center text-gray-400 italic">
+                <td colSpan={COLUMNS.length} className="px-3 py-6 text-center text-pivot-textMuted italic">
                   No issues match the current filters.
                 </td>
               </tr>
@@ -174,7 +177,7 @@ export default function IssuesTable({ issues = [] }) {
             {table.getRowModel().rows.map((row) => {
               const sev = row.original.severity
               return (
-                <tr key={row.id} className={`border-t border-gray-200 hover:opacity-90 ${SEV_STYLE[sev] || ''}`}>
+                <tr key={row.id} className={`border-t border-slate-700 hover:bg-slate-700/50 ${SEV_STYLE[sev] || ''}`}>
                   {row.getVisibleCells().map((cell) => (
                     <td key={cell.id} className="px-3 py-2">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}

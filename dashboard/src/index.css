@@ -4,6 +4,6 @@
 
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900 antialiased;
+    @apply bg-pivot-dark text-pivot-textPrimary antialiased;
   }
 }

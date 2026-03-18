@@ -3,9 +3,9 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 
-from api.routes import clients, runner
+from api.routes import clients, runner, sqlgen
 
 app = FastAPI(title="PIVOT Test File Review Dashboard", version="1.0.0")
 
@@ -19,6 +19,7 @@ app.add_middleware(
 
 app.include_router(clients.router, prefix="/api")
 app.include_router(runner.router, prefix="/api")
+app.include_router(sqlgen.router, prefix="/api")
 
 # Serve the built React app — only mount if the dist directory exists
 DIST_DIR = Path(__file__).resolve().parent.parent / "dashboard" / "dist"
@@ -36,7 +37,14 @@ if DIST_DIR.exists():
             return {"detail": "Not Found"}
         index = DIST_DIR / "index.html"
         if index.exists():
-            return FileResponse(str(index))
+            return HTMLResponse(
+                content=index.read_text(encoding="utf-8"),
+                headers={
+                    "Cache-Control": "no-cache, no-store, must-revalidate",
+                    "Pragma": "no-cache",
+                    "Expires": "0",
+                },
+            )
         return {"detail": "Frontend not built. Run: cd dashboard && npm run build"}
 else:
     @app.get("/", include_in_schema=False)
